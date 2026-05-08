@@ -7,8 +7,6 @@ const { tags } = require('../utils/constants/tags');
 const { achievementDescriptions } = require('../utils/constants/achievements');
 const { generateLeaderboard } = require('../utils/functions/database');
 
-const expressLayouts = require('express-ejs-layouts');
-
 const VIEWS = __dirname + '/../views/';
 
 module.exports = (app, mongo) => {
@@ -36,7 +34,7 @@ module.exports = (app, mongo) => {
     res.redirect('/profile/' + req.user.ign);
   });
 
-  app.get('/profile/:username', expressLayouts, (req, res) => {
+  app.get('/profile/:username', (req, res) => {
     mongo.User.findOne({ ign: req.params.username }, async function (err, obj) {
       if (obj) {
         if (
@@ -53,14 +51,13 @@ module.exports = (app, mongo) => {
           const experienceStats = await calculateLevel(
             obj.stats.experience ? obj.stats.experience : 0
           );
-          res.render(VIEWS + 'private/profileV2.ejs', {
+          res.render(VIEWS + 'private/profile.ejs', {
             age: thisAge,
             user: obj,
             totalTags: tags,
             pageName: obj.ign + "'s Profile",
             experienceStats,
             allAchievements: achievementDescriptions,
-            layout: 'layouts/base.ejs',
           });
         }
       } else {
