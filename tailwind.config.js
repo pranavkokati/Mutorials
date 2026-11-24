@@ -2,11 +2,23 @@ const plugin = require('tailwindcss/plugin');
 
 module.exports = {
   mode: 'jit',
-  content: ['./views/**/*.ejs', './public/css/**/*.css'],
+  darkMode: 'class',
+  content: ['./views/**/*.ejs', './public/css/**/*.css', './public/js/**/*.js'],
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'Arial', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'Arial', 'sans-serif'],
+      },
+      colors: {
+        // one accent for the whole app; subjects get their own hue
+        brand: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+        },
       },
       textShadow: {
         sm: '0 0px 2px var(--tw-shadow-color)',

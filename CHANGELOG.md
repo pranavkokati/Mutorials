@@ -4,6 +4,14 @@
 
 ### Added
 
+- **New signed-in interface** (Tailwind, light/dark, keyboard and screen-reader
+  friendly, no dependency on third-party scripts for navigation): shared app
+  shell with an accessible nav, and redesigned home dashboard (rating cards
+  with trend sparklines, review-due badge), training hub, subject picker,
+  coach, spaced review, search and leaderboard. Other pages keep their old look
+  until migrated.
+- `npm run demo`: one-command local run with seeded data
+  (see the README).
 - **Adaptive rating engine v2** (uncertainty-aware K for learners and
   questions). Simulation and rationale: [docs/RATING.md](docs/RATING.md).
 - **Study coach** (`/coach`) and **spaced review** (`/review`):
@@ -17,6 +25,10 @@
 
 ### Fixed
 
+- Success flash messages were silently dropped on the newer Tailwind pages
+  (missing comma in `flashesV2.ejs`), and its Train/Stats nav links were
+  relative, so they broke from any nested page.
+- Search results listed only an ID; they now show the question text.
 - Search page crashed when the keyword search found nothing (Express 5 query
   objects have no prototype).
 - Wide-ranging security, correctness and platform fixes from the earlier

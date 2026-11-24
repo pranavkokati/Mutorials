@@ -1,0 +1,16 @@
+<%# Flash messages for the app shell. Success and error are both shown. %>
+<% const flashes = [] %>
+<% const collect = (list, kind) => { (list || []).forEach((m) => flashes.push({ kind, text: m })) } %>
+<% collect(locals.errorFlash, 'error') %>
+<% collect(locals.successFlash, 'success') %>
+<% if (flashes.length) { %>
+  <div class="mx-auto mt-4 flex w-full max-w-6xl flex-col gap-2 px-4 sm:px-6" role="status" aria-live="polite">
+    <% flashes.forEach((f) => { %>
+      <div class="rounded-lg border px-4 py-3 text-sm <%= f.kind === 'error'
+        ? 'border-red-200 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-200'
+        : 'border-green-200 bg-green-50 text-green-900 dark:border-green-900 dark:bg-green-950 dark:text-green-200' %>">
+        <%= f.text %>
+      </div>
+    <% }) %>
+  </div>
+<% } %>

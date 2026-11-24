@@ -20,6 +20,8 @@ const publicUser = (doc) => {
 
 const VIEWS = __dirname + '/../views/';
 
+const { appLayout } = require('../utils/middleware/appLayout');
+
 module.exports = (app, mongo) => {
   app.all(/^(\/leaderboard|\/profile|\/stats).*$/, (req, res, next) => {
     if (req.isAuthenticated()) {
@@ -33,7 +35,7 @@ module.exports = (app, mongo) => {
     }
   });
 
-  app.get('/leaderboard', async (req, res) => {
+  app.get('/leaderboard', appLayout, async (req, res) => {
     const leaderboard = await generateLeaderboard(mongo.User, 10);
     res.render(VIEWS + 'private/leaderboard.ejs', {
       rankings: leaderboard,

@@ -1,88 +1,27 @@
 // Study coach (weak-spot analysis) and spaced-review queue.
 // Both are derived from the append-only Attempt log; see docs/COACH.md.
-const { subjectUnitDictionary } = require('../utils/constants/subjects');
 const {
-  unitPerformance,
-  recommend,
   dueReviews,
   REVIEW_INTERVAL_DAYS,
 } = require('../utils/functions/coach');
+const {
+  loadAttempts,
+  buildCoach,
+  dueEntry,
+} = require('../utils/functions/coachData');
+const { appLayout } = require('../utils/middleware/appLayout');
 const { gradeAnswer } = require('../utils/functions/answers');
 const { toObjectId } = require('../utils/functions/ids');
 const { wrap } = require('../utils/functions/http');
 const { toPlainText, describeCorrect } = require('../utils/ai/text');
 
 const VIEWS = __dirname + '/../views/';
-const ATTEMPT_LIMIT = 3000;
 const REVIEW_PAGE = 25;
-const SUBJECTS = ['Physics', 'Chemistry', 'Biology', 'ESS'];
 
 const snippet = (html, max = 180) => {
   const text = toPlainText(html, 600).replace(/\s+/g, ' ');
   return text.length > max ? text.slice(0, max - 1).trimEnd() + '…' : text;
 };
-
-async function loadAttempts(mongo, user) {
-  return mongo.Attempt.find({ user: user._id })
-    .sort({ createdAt: -1 })
-    .limit(ATTEMPT_LIMIT)
-    .select(
-      'question bank subject units correct rated userRatingBefore questionRatingBefore createdAt',
-    )
-    .lean();
-}
-
-async function buildCoach(mongo, user) {
-  const attempts = await loadAttempts(mongo, user);
-  const performance = unitPerformance(attempts);
-  const subjects = {};
-  for (const name of SUBJECTS) {
-    const key = name.toLowerCase();
-    const rating = user.rating ? user.rating[key] : undefined;
-    if (!Number.isFinite(rating) || rating < 0) {
-      continue;
-    }
-    const units = performance
-      .filter((u) => u.subject === key)
-      .sort((a, b) => a.residual - b.residual);
-    const allUnits = (subjectUnitDictionary[name] || []).map(
-      (unit) => `${name} - ${unit}`,
-    );
-    subjects[name] = {
-      rating,
-      units,
-      recommendations: recommend(units, allUnits).map((r) => ({
-        ...r,
-        href:
-          '/train/' +
-          name +
-          '/displayQuestion?units=' +
-          encodeURIComponent(r.unit),
-      })),
-    };
-  }
-  const due = dueReviews(attempts).filter((d) => d.bank === 'standard');
-  return {
-    subjects,
-    attemptsAnalysed: attempts.length,
-    reviewDue: due.length,
-    // lets the page and the tests say how much history backs the numbers
-    truncated: attempts.length >= ATTEMPT_LIMIT,
-  };
-}
-
-// a question is reviewable only while it is due for this user
-async function dueEntry(mongo, user, questionId) {
-  const attempts = await mongo.Attempt.find({
-    user: user._id,
-    question: questionId,
-  })
-    .sort({ createdAt: 1 })
-    .select('question bank subject units correct createdAt')
-    .lean();
-  const [entry] = dueReviews(attempts);
-  return entry && entry.bank === 'standard' ? entry : null;
-}
 
 module.exports = (app, mongo) => {
   app.all(/^\/(coach|review)(\/.*)?$/, (req, res, next) => {
@@ -106,6 +45,7 @@ module.exports = (app, mongo) => {
 
   app.get(
     '/coach',
+    appLayout,
     wrap(async (req, res) => {
       res.render(VIEWS + 'private/coach.ejs', {
         coach: await buildCoach(mongo, req.user),
@@ -116,6 +56,7 @@ module.exports = (app, mongo) => {
 
   app.get(
     '/review',
+    appLayout,
     wrap(async (req, res) => {
       const attempts = await loadAttempts(mongo, req.user);
       const due = dueReviews(attempts)
@@ -143,6 +84,7 @@ module.exports = (app, mongo) => {
 
   app.get(
     '/review/:id',
+    appLayout,
     wrap(async (req, res) => {
       const id = toObjectId(req.params.id);
       const entry = id && (await dueEntry(mongo, req.user, id));
@@ -162,6 +104,7 @@ module.exports = (app, mongo) => {
 
   app.post(
     '/review/:id',
+    appLayout,
     wrap(async (req, res) => {
       const id = toObjectId(req.params.id);
       const entry = id && (await dueEntry(mongo, req.user, id));
