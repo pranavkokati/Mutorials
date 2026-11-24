@@ -173,6 +173,34 @@ test('cross-site state-changing requests are blocked, same-origin ones are not',
   assert.equal(same.status, 302);
 });
 
+test('a real browser form post (Sec-Fetch-Site same-origin, Origin null) is accepted', async () => {
+  // Browsers send `Origin: null` on same-origin form posts when the referrer
+  // policy is no-referrer. Regression: this once locked every browser out.
+  const browserPost = await request(ctx.app)
+    .post('/login')
+    .set('Sec-Fetch-Site', 'same-origin')
+    .set('Origin', 'null')
+    .type('form')
+    .send({ username: 'a', password: 'b' });
+  assert.equal(browserPost.status, 302);
+  // a sandboxed cross-site form is "null" too, but the browser labels it cross-site
+  const sandboxed = await request(ctx.app)
+    .post('/login')
+    .set('Sec-Fetch-Site', 'cross-site')
+    .set('Origin', 'null')
+    .type('form')
+    .send({ username: 'a', password: 'b' });
+  assert.equal(sandboxed.status, 403);
+});
+
+test('pages send a referrer policy that keeps same-origin Origin headers intact', async () => {
+  const res = await request(ctx.app).get('/signin');
+  assert.equal(
+    res.headers['referrer-policy'],
+    'strict-origin-when-cross-origin',
+  );
+});
+
 test('public profile data never exposes credentials', async () => {
   const { agent, user } = await newUser();
   const ign = user.ign;
