@@ -1,0 +1,57 @@
+<%# One spaced-review question, before and after answering %>
+<%# ARGUMENTS: question, entry, result (null before answering) %>
+
+<%- include("../partials/header") -%>
+<%- include("../partials/navigationPrivate") -%>
+
+<div class="container my-5">
+  <h1 class="text-center display-4">Spaced Review</h1>
+  <p class="text-center text-muted">Step <%= entry.box + 1 %> of 5. This does not affect your rating.</p>
+
+  <div class="jumbotron p-4">
+    <p><%- question.question %></p>
+
+    <% if (result === null) { %>
+    <form action="/review/<%= question._id %>" method="POST">
+      <% if (question.type === 'mc') { %>
+        <% question.choices.forEach((choice, i) => { %>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="answerChoice" id="c<%= i + 1 %>" value="<%= i + 1 %>">
+          <label class="form-check-label" for="c<%= i + 1 %>"><%= String.fromCharCode(65 + i) %>. <%= choice %></label>
+        </div>
+        <% }) %>
+      <% } else if (question.type === 'sa') { %>
+        <% question.choices.forEach((choice, i) => { %>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="saChoice" id="c<%= i + 1 %>" value="<%= i + 1 %>">
+          <label class="form-check-label" for="c<%= i + 1 %>"><%= String.fromCharCode(65 + i) %>. <%= choice %></label>
+        </div>
+        <% }) %>
+      <% } else { %>
+        <div class="form-group">
+          <input type="text" class="form-control" name="freeAnswer" placeholder="Enter your answer here" autocomplete="off">
+        </div>
+      <% } %>
+      <input class="btn btn-primary mt-4" type="submit" value="Submit">
+    </form>
+    <% } else { %>
+    <div class="alert <%= result.correct ? 'alert-success' : 'alert-danger' %>">
+      <strong><%= result.correct ? 'Correct.' : 'Not yet.' %></strong>
+      Correct answer: <%= result.correctAnswer %>
+      <br>
+      <% if (result.graduated) { %>
+      You have cleared this question; it will not come back.
+      <% } else { %>
+      It will come back in <%= result.nextInDays %> day<%= result.nextInDays === 1 ? '' : 's' %>.
+      <% } %>
+    </div>
+    <% if (question.answer_ex) { %>
+    <h5>Explanation</h5>
+    <div><%- question.answer_ex %></div>
+    <% } %>
+    <a class="btn btn-primary mt-4" href="/review">Back to review</a>
+    <% } %>
+  </div>
+</div>
+
+<%- include("../partials/footer") -%>

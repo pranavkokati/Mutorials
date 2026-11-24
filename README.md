@@ -44,6 +44,8 @@ Mutorials includes optional AI features that run on the server itself with open-
 
 Question selection is adaptive. Learner and question ratings use an uncertainty-aware Elo update that adapts quickly to new learners and new questions and settles as evidence accumulates; see [docs/RATING.md](docs/RATING.md) for the specification and an offline simulation (`node scripts/elo-sim.js`).
 
+Two learner-facing tools are built on the answer log: a **study coach** (`/coach`) that ranks units by performance against what your rating predicted, and a **spaced review** queue (`/review`) that resurfaces missed questions on a Leitner schedule without affecting your rating. See [docs/COACH.md](docs/COACH.md).
+
 ## Security
 
 See [SECURITY.md](SECURITY.md) for the security model and how to report a vulnerability.

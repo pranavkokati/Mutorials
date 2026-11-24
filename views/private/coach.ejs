@@ -1,0 +1,87 @@
+<%# Study coach: per-unit performance relative to the learner's own rating %>
+<%# ARGUMENTS: coach - { subjects, attemptsAnalysed, reviewDue, truncated } %>
+
+<%- include("../partials/header") -%>
+<%- include("../partials/navigationPrivate") -%>
+
+<div class="container my-5">
+  <h1 class="text-center display-4">Study Coach</h1>
+  <p class="text-center lead">Where you are outperforming or underperforming your own rating, by unit.</p>
+
+  <% if (coach.reviewDue > 0) { %>
+  <div class="alert alert-info text-center">
+    You have <strong><%= coach.reviewDue %></strong> missed question<%= coach.reviewDue === 1 ? '' : 's' %> due for
+    <a href="/review">spaced review</a>.
+  </div>
+  <% } %>
+
+  <% const names = Object.keys(coach.subjects); %>
+  <% if (names.length === 0) { %>
+  <div class="alert alert-secondary">Set an initial rating in at least one subject and answer some questions to see coaching.</div>
+  <% } %>
+
+  <% names.forEach((name) => { const s = coach.subjects[name]; %>
+  <div class="jumbotron p-4 mb-4">
+    <h3><%= name %> <small class="text-muted">rating <%= s.rating %></small></h3>
+
+    <% if (s.recommendations.length > 0) { %>
+    <p class="mb-1"><strong>Suggested next:</strong></p>
+    <ul>
+      <% s.recommendations.forEach((r) => { %>
+      <li>
+        <a href="<%= r.href %>"><%= r.unit.replace(/^[^-]*- /, '') %></a>
+        <span class="text-muted">
+          <%= r.reason === 'weak' ? '(below your level, ' + (r.residual * 100).toFixed(0) + ' pts vs expected)' : '(not yet practised)' %>
+        </span>
+      </li>
+      <% }) %>
+    </ul>
+    <% } %>
+
+    <% if (s.units.length > 0) { %>
+    <div class="table-responsive">
+      <table class="table table-sm text-center">
+        <thead>
+          <tr>
+            <th class="text-left">Unit</th>
+            <th>Attempts</th>
+            <th>Accuracy</th>
+            <th>Expected</th>
+            <th>vs expected</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% s.units.forEach((u) => { %>
+          <tr>
+            <td class="text-left"><%= u.unit.replace(/^[^-]*- /, '') %></td>
+            <td><%= u.attempts %></td>
+            <td><%= Math.round(u.accuracy * 100) %>%</td>
+            <td><%= Math.round(u.expectedAccuracy * 100) %>%</td>
+            <td><%= (u.residual >= 0 ? '+' : '') + (u.residual * 100).toFixed(1) %> pts</td>
+            <td>
+              <% if (u.status === 'weak') { %><span class="badge badge-danger bg-danger">Weak spot</span>
+              <% } else if (u.status === 'strong') { %><span class="badge badge-success bg-success">Strength</span>
+              <% } else if (u.status === 'on-track') { %><span class="badge badge-secondary bg-secondary">On track</span>
+              <% } else { %><span class="badge badge-light bg-light text-dark">Need more data</span><% } %>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+    <p class="text-muted">No rated answers in this subject yet.</p>
+    <% } %>
+  </div>
+  <% }) %>
+
+  <p class="text-muted small">
+    Based on your last <%= coach.attemptsAnalysed %> rated answers<%= coach.truncated ? ' (older history is not included)' : '' %>.
+    "vs expected" compares your results with what your rating predicted for those questions, so it is relative to your
+    own overall level in the subject, with recent answers weighted more. Units with few answers are shrunk towards
+    "on track" and are not classified until there is enough evidence. See docs/COACH.md.
+  </p>
+</div>
+
+<%- include("../partials/footer") -%>

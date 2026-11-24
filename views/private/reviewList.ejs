@@ -1,0 +1,31 @@
+<%# Spaced review: missed questions that are due again %>
+<%# ARGUMENTS: items - due reviews with preview text, intervals - Leitner intervals in days %>
+
+<%- include("../partials/header") -%>
+<%- include("../partials/navigationPrivate") -%>
+
+<div class="container my-5">
+  <h1 class="text-center display-4">Spaced Review</h1>
+  <p class="text-center lead">
+    Questions you missed come back after <%= intervals.join(', ') %> days as you get them right.
+    Review answers never change your rating.
+  </p>
+
+  <% if (items.length === 0) { %>
+  <div class="alert alert-success text-center">Nothing is due. Missed questions will appear here when it is time to revisit them.</div>
+  <% } else { %>
+  <div class="list-group">
+    <% items.forEach((item) => { %>
+    <a class="list-group-item list-group-item-action" href="/review/<%= item.question %>">
+      <div class="d-flex w-100 justify-content-between">
+        <strong><%= item.subject.charAt(0).toUpperCase() + item.subject.slice(1) %></strong>
+        <small>step <%= item.box + 1 %> of <%= intervals.length %> &middot; <%= item.overdueDays <= 0 ? 'due now' : item.overdueDays + ' days overdue' %></small>
+      </div>
+      <p class="mb-1"><%= item.preview %></p>
+    </a>
+    <% }) %>
+  </div>
+  <% } %>
+</div>
+
+<%- include("../partials/footer") -%>
