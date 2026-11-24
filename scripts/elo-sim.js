@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
 /**
  * Offline comparison of the legacy rating rule (v1) and the uncertainty-aware
  * rule (v2) used by Mutorials' adaptive trainer.
