@@ -1,0 +1,74 @@
+<%# Item analysis for a contributor's own questions %>
+<%# ARGUMENTS: report - { questions, truncated } %>
+
+<%- include("../partials/header") -%>
+<%- include("../partials/navigationPrivate") -%>
+
+<div class="container my-5">
+  <h1 class="text-center display-4">Item Analysis</h1>
+  <p class="text-center lead">How your questions are performing, and which ones deserve a second look.</p>
+
+  <% if (report.questions.length === 0) { %>
+  <div class="alert alert-secondary text-center">No published questions found for your contributor ID yet.</div>
+  <% } else { %>
+  <p class="text-muted small">
+    Flags are prompts to re-read a question, not verdicts. Option counts appear after 10 recorded answers and only cover answers
+    submitted since this feature was introduced. See docs/ITEM-ANALYSIS.md.
+    <%= report.truncated ? 'Results are limited to your most recent questions and answers.' : '' %>
+  </p>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Question</th>
+          <th class="text-center">Rating</th>
+          <th class="text-center">Answers</th>
+          <th class="text-center">Pass</th>
+          <th class="text-center">Expected</th>
+          <th>Calibration</th>
+          <th>Flags and options</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% report.questions.forEach((q) => { %>
+        <tr>
+          <td><span class="badge bg-secondary"><%= q.subject %></span> <%= q.preview %></td>
+          <td class="text-center"><%= q.rating %></td>
+          <td class="text-center"><%= q.attempts %></td>
+          <td class="text-center"><%= q.passRate === null ? '-' : Math.round(q.passRate * 100) + '%' %></td>
+          <td class="text-center"><%= q.expectedPassRate === null ? '-' : Math.round(q.expectedPassRate * 100) + '%' %></td>
+          <td>
+            <% if (q.calibration === 'harder-than-rated') { %><span class="badge bg-warning text-dark">Harder than rated</span>
+            <% } else if (q.calibration === 'easier-than-rated') { %><span class="badge bg-warning text-dark">Easier than rated</span>
+            <% } else if (q.calibration === 'ok') { %><span class="badge bg-success">Calibrated</span>
+            <% } else { %><span class="badge bg-light text-dark">Need 30 answers</span><% } %>
+          </td>
+          <td>
+            <% q.flags.forEach((f) => { %>
+              <% if (f.type === 'possible-key-error') { %>
+              <div class="text-danger">
+                Check the answer key: among learners expected to get this right, option <%= f.option %> was chosen
+                <%= Math.round(f.wrongShare * 100) %>% of the time versus <%= Math.round(f.keyedShare * 100) %>% for the keyed answer
+                (<%= f.strongAttempts %> answers).
+              </div>
+              <% } else if (f.type === 'unused-distractor') { %>
+              <div>Option <%= f.option %> is almost never chosen.</div>
+              <% } %>
+            <% }) %>
+            <% if (q.options) { %>
+            <div class="small text-muted">
+              <% q.options.forEach((o) => { %>
+              <%= String.fromCharCode(64 + o.option) %><%= o.correct ? '*' : '' %> <%= Math.round(o.share * 100) %>%&nbsp;&nbsp;
+              <% }) %>
+            </div>
+            <% } %>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</div>
+
+<%- include("../partials/footer") -%>

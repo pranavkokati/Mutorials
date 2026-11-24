@@ -10,6 +10,9 @@ const attemptSchema = new mongoose.Schema({
   subject: String,
   units: [String],
   correct: { type: Boolean, required: true },
+  // option numbers (1-based, as strings) the learner picked; multiple choice and
+  // select-all only. Free-response text is deliberately not stored.
+  choice: [String],
   // false when the answer was shown for review only (not the queued question)
   rated: { type: Boolean, default: true },
   mode: { type: String, default: 'classic' },
