@@ -148,6 +148,7 @@ module.exports = (app, mongo) => {
         user: req.user,
         question,
         correct: graded.correct,
+        userAnswer: graded.userAnswer,
         mode: 'classic',
         session: req.session,
       });

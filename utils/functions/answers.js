@@ -61,6 +61,23 @@ function gradeAnswer(question, body) {
   return null;
 }
 
+// Option numbers picked on a multiple-choice or select-all question, as strings;
+// anything else (free response, malformed input) yields no choice so that
+// free text is never persisted.
+function normalizeChoice(question, userAnswer) {
+  if (!question || (question.type !== 'mc' && question.type !== 'sa')) {
+    return [];
+  }
+  const total = (question.choices || []).length;
+  const raw = Array.isArray(userAnswer) ? userAnswer : [userAnswer];
+  const picked = raw
+    .map((value) => String(value))
+    .filter((value) => /^\d{1,2}$/.test(value))
+    .map(Number)
+    .filter((n) => n >= 1 && n <= total);
+  return [...new Set(picked)].sort((a, b) => a - b).map(String);
+}
+
 // achievements newly earned given the post-answer state; returns { 'path': true }
 function earnedAchievements({ subjectKey, correct, solves, rating, tagCount }) {
   const earned = { join_mutorials: true };
@@ -302,6 +319,7 @@ async function recordAnswer(
       subject: subjectKey,
       units: groups,
       correct,
+      choice: normalizeChoice(question, userAnswer),
       rated: true,
       mode: mode || 'classic',
       userRatingBefore: oldUserRating,
@@ -387,5 +405,6 @@ module.exports = {
   markServed,
   recordAnswer,
   recordSkip,
+  normalizeChoice,
   SKIP_PENALTY,
 };

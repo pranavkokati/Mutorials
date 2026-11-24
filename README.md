@@ -46,6 +46,8 @@ Question selection is adaptive. Learner and question ratings use an uncertainty-
 
 Two learner-facing tools are built on the answer log: a **study coach** (`/coach`) that ranks units by performance against what your rating predicted, and a **spaced review** queue (`/review`) that resurfaces missed questions on a Leitner schedule without affecting your rating. See [docs/COACH.md](docs/COACH.md).
 
+Question authors get an **item analysis** page (`/contributors/items`) showing whether each question's rating is calibrated, whether its distractors do any work, and which questions may have a wrong answer key; see [docs/ITEM-ANALYSIS.md](docs/ITEM-ANALYSIS.md). Release notes are in [CHANGELOG.md](CHANGELOG.md).
+
 ## Security
 
 See [SECURITY.md](SECURITY.md) for the security model and how to report a vulnerability.
