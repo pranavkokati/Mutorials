@@ -59,10 +59,10 @@ lower. Share of units classified "weak" (4000 trials per cell):
 
 Reading: the false-positive rate is about 5 % per unit (the z threshold), with
 no unit classified below five effective answers. Moderate deficits (about 200
-points) need many answers to be detected; large ones are found quickly. With
-roughly a dozen units per subject, expect about one spurious "weak spot" per
-subject for every twenty units checked, so the label should be read as "worth
-practising", not as a diagnosis. An earlier threshold of `z = 1.28` raised the
+points) need many answers to be detected; large ones are found quickly. Because
+many units are tested at once, about one in twenty units that are on par will
+still be labelled weak, so the label should be read as "worth practising", not
+as a diagnosis. An earlier threshold of `z = 1.28` raised the
 false-positive rate to about 10 % and was rejected.
 
 Limitations. The simulation uses the same response model as the coach, so
