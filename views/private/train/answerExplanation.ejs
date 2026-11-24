@@ -1,295 +1,88 @@
-<%# Page where answer explanation is displayed, after finishing question %>
-<%# ARGUMENTS: correct - correct/wrong bool, userRating - new user rating, oldUserRating - old user rating, oldQuestionRating - old question rating %>
-<%#      cont: userAnswer - what the user answered, subject - subject of question, units - units of question, user - current user object, newQues - question object %>
+<%# Result after answering, rendered inside layouts/app.ejs %>
+<%# ARGUMENTS: correct, userRating, oldUserRating, oldQ, userAnswer, subject, units, user, newQues, experienceStats, passRate, attempts, spark %>
+<%
+  const letter = (i) => String.fromCharCode(64 + i);
+  const key = String(subject).toLowerCase();
+  const delta = userRating - oldUserRating;
+  const mine = [].concat(userAnswer).map(String);
+  const right = [].concat(newQues.answer).map(String);
+  const next = '/train/' + subject + '/displayQuestion?units=' + units;
+%>
 
-<%- include("../../partials/header") -%>
-<%- include("../../partials/navigationPrivate") -%>
-
-<script>
-  window.onload = function() {
-    // render pass/fail chart
-
-    Chart.pluginService.register({
-      beforeDraw: function(chart) {
-        if (chart.config.options.passratePlugin) {
-          var width = chart.chart.width;
-          var height = chart.chart.height;
-          var ctx = chart.chart.ctx;
-
-          ctx.restore();
-
-          var fontSize = '1';
-          ctx.font = fontSize + 'em sans-serif';
-
-          ctx.fillStyle = '#8d0f0f';
-          var text =
-            'Fail rate: <%= Math.round(100*(newQues.stats.fail)/(newQues.stats.pass+newQues.stats.fail)) %>%';
-          var textX = Math.round((width - ctx.measureText(text).width) / 2);
-          var textY = height / 2 + 20;
-          ctx.fillText(text, textX, textY);
-
-          ctx.fillStyle = '#208d0f';
-          text =
-            'Pass rate: <%= Math.round(100*(newQues.stats.pass)/(newQues.stats.pass+newQues.stats.fail)) %>%';
-          textX = Math.round((width - ctx.measureText(text).width) / 2);
-          textY -= 20;
-          ctx.fillText(text, textX, textY);
-
-          ctx.save();
-        }
-      },
-    });
-
-    var ctxPassrate = document.getElementById('passRateChart');
-
-    var style = ctxPassrate.style;
-    style.marginLeft = 'auto';
-    style.marginRight = 'auto';
-
-    var myChart = new Chart(ctxPassrate, {
-      type: 'pie',
-      data: {
-        labels: ['Pass', 'Fail'],
-        datasets: [{
-          label: 'Problem Pass/Fail Rates',
-          data: [$('#passcount').val(), $('#failcount').val()],
-          backgroundColor: ['rgba(80, 185, 20, 1)', 'rgba(215, 80, 80, 1)'],
-          hoverBackgroundColor: [
-            'rgba(80, 185, 20, 1)',
-            'rgba(215, 80, 80, 1)',
-          ],
-          borderColor: [
-            'rgba(255, 255, 255, 0.5)',
-            'rgba(255, 255, 255, 0.5)',
-          ],
-          borderWidth: 2,
-        }, ],
-      },
-      options: {
-        passratePlugin: true,
-        title: {
-          display: true,
-          text: 'Question Pass/Fail Rates',
-        },
-        legend: {
-          display: false,
-        },
-        cutoutPercentage: 60,
-        responsive: true,
-      },
-    });
-
-    // render rating tracker chart
-
-    var ctxTracker = document.getElementById('ratingTrackerChart');
-
-    var style = ctxTracker.style;
-    style.marginLeft = 'auto';
-    style.marginRight = 'auto';
-
-    var tracker = $('#ratingTrackerArray').val().split('@');
-    if (tracker.length < 2) {
-      tracker.unshift(tracker[0]);
-    }
-    var labels = [];
-    for (var i = tracker.length; i > 0; i--) {
-      labels.push(i + ' Ago');
-    }
-    labels.push('');
-    var myChart = new Chart(ctxTracker, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Rating History',
-          data: tracker,
-          backgroundColor: 'rgba(100, 200, 230, 1)',
-          borderColor: 'rgba(100, 200, 230, 1)',
-          fill: false,
-          borderWidth: 5,
-        }, ],
-      },
-      options: {
-        title: {
-          display: true,
-          text: 'My ' + '<%= subject %>' + ' Rating Tracker',
-        },
-        legend: {
-          display: false,
-        },
-        scales: {
-          yAxes: [{
-            ticks: {
-              min: Math.round((Math.min.apply(null, tracker) - 50) / 50) * 50,
-              max: Math.round((Math.max.apply(null, tracker) + 50) / 50) * 50,
-              stepSize: 50,
-            },
-          }, ],
-          xAxes: [{
-            ticks: {
-              display: false,
-            },
-          }, ],
-        },
-        responsive: true,
-      },
-    });
-  };
-
-  $(document).ready(function() {
-    // focus on next button if correct
-    if (correct) {
-      setTimeout(() => {
-        $([document.documentElement, document.body]).animate({
-            scrollTop: $('#tryanother').offset().top,
-          },
-          1000
-        );
-        $('#tryanother').focus();
-      }, 1000);
-    }
-  });
-</script>
-
-
-<div class="container mt-5">
-  <%- include("../../partials/components/experienceBar") -%>
+<div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+  <p class="text-sm text-muted"><a class="link" href="/train">Train</a> / <%= subject %></p>
+  <%- include('../../partials/app/xp.ejs', { experienceStats }) %>
 </div>
 
-<div class="jumbotron container mt-3">
-  <div class="row">
-    <div class="col-12 col-lg-8">
-      <%# Question and explanation %>
-      <div class="mb-3">
-        <h3>Question:</h3>
-        <p><%- newQues.question %></p>
-      </div>
-
-      <% if(newQues.type == "mc") { %>
-      <div class="mb-4">
-        <% var i = 1; %>
-        <% newQues.choices.forEach((choice) => { %>
-        <div class="form-check">
-          <% if(userAnswer == i) { %>
-          <input class="form-check-input" type="radio" name="answerChoice" id="<%= i %>" value="<%= i %>" disabled checked>
-          <% } else { %>
-          <input class="form-check-input" type="radio" name="answerChoice" id="<%= i %>" value="<%= i %>" disabled>
-          <% } %>
-          <% if(newQues.answer[0] == i) { %>
-          <label class="form-check-label" for="<%= i %>">
-            <font color="green"><%= String.fromCharCode(64+i) %>. <%= choice %></font>
-          </label>
-          <% } else if(userAnswer == i) { %>
-          <label class="form-check-label" for="<%= i %>">
-            <font color="red"><%= String.fromCharCode(64+i) %>. <%= choice %></font>
-          </label>
-          <% } else { %>
-          <label class="form-check-label" for="<%= i %>"><%= String.fromCharCode(64+i) %>. <%= choice %></label>
-          <% } %>
-          <% i++; %>
-        </div>
-        <% }) %>
-      </div>
-
-      <% } else if(newQues.type == "sa") { %>
-      <div class="mb-4">
-        <% var i = 1; %>
-        <% newQues.choices.forEach((choice) => { %>
-        <div class="form-check my-1 me-sm-2">
-          <% if(userAnswer.includes(''+i)) { %>
-          <input type="checkbox" name="saChoice" class="form-check-input" id="<%= i %>" value="<%= i %>" disabled checked>
-          <% } else { %>
-          <input type="checkbox" name="saChoice" class="form-check-input" id="<%= i %>" value="<%= i %>" disabled>
-          <% } %>
-          <% if(newQues.answer.includes(i)) { %>
-          <label class="form-check-label" for="<%= i %>">
-            <font color="green"><%= String.fromCharCode(64+i) %>. <%= choice %></font>
-          </label>
-          <% } else if(userAnswer.includes(''+i)) { %>
-          <label class="form-check-label" for="<%= i %>">
-            <font color="red"><%= String.fromCharCode(64+i) %>. <%= choice %></font>
-          </label>
-          <% } else { %>
-          <label class="form-check-label" for="<%= i %>"><%= String.fromCharCode(64+i) %>. <%= choice %></label>
-          <% } %>
-          <% i++; %>
-        </div>
-        <% }) %>
-      </div>
-      <% } else if(newQues.type == "fr") { %>
-      <div class="mb-4">
-        <h5>You answered: <%= userAnswer %></h5>
-        <h5>The correct answer is: <%= newQues.answer %></h5>
-      </div>
-      <% } %>
-
-      <div>
-        <h3>Answer Explanation:</h3>
-        <p><%- newQues.answer_ex %></p>
-      </div>
-
-      <%- include("../../partials/aiTutor", { aiQuestionId: newQues._id, aiPhase: 'after', aiUserAnswer: userAnswer, aiCorrect: correct }) %>
-
-      <% if(newQues.source_statement) { %>
-      <hr>
-      <p class="text-center"><%= newQues.source_statement %></p>
-      <% } %>
-    </div>
-
-    <%# Question data %>
-    <div class="col-12 col-lg-4">
-
-      <div class="mb-4">
-        <% if(correct) { %>
-        <h3 class="mb-4">
-          <font color="green">Your answer is correct!</font>
-        </h3>
-        <% } else { %>
-        <h3 class="mb-4">
-          <font color="red">Your answer is incorrect.</font>
-        </h3>
-        <% } %>
-      </div>
-
-      <div class="my-4">
-        <h5>New <%= subject.toLowerCase() %> rating: <%= userRating %> (<%= (userRating-oldUserRating >= 0) ? "+"+(userRating-oldUserRating) : (userRating-oldUserRating) %>)</h5>
-        <h5>Question rating: <%= oldQ %></h5>
-      </div>
-
-      <% if(newQues.ext_source != "original") { %>
-      <div>
-        <h5>Question Source: <%= newQues.ext_source %></h5>
-      </div>
-      <% } %>
-
-      <div>
-        <h5>Question Tags:</h5>
-        <% newQues.tags.forEach((tag) => { %>
-        <button class="btn btn-info btn-sm my-1" disabled><%= tag %></button>
-        <% }) %>
-      </div>
-
-      <%# Rating tracker chart %>
-      <div class="canvas-container-center text-center">
-        <canvas id="ratingTrackerChart" width="400" height="400" class="my-4"></canvas>
-      </div>
-      <input type="hidden" id="ratingTrackerArray" value="<%= user.stats.ratingTracker[subject.toLowerCase()].join('@') %>">
-
-      <%# Pass rate chart %>
-      <div class="canvas-container-center text-center">
-        <canvas id="passRateChart" width="400" height="400" class="my-4"></canvas>
-      </div>
-      <input type="hidden" id="passcount" value="<%= newQues.stats.pass %>">
-      <input type="hidden" id="failcount" value="<%= newQues.stats.fail %>">
-    </div>
+<header class="mt-8 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+  <div>
+    <h1 class="page-title mb-3 <%= correct ? 'pencil-good' : 'pen-weak' %>"><%= correct ? 'Correct' : 'Not quite' %></h1>
+    <p class="page-lead">
+      Your <%= key %> rating is now <span class="font-semibold text-ink"><%= userRating %></span>
+      (<%= delta >= 0 ? '+' + delta : '−' + Math.abs(delta) %>).
+    </p>
   </div>
-</div>
+  <% if (spark) { %>
+  <figure class="m-0">
+    <svg viewBox="0 0 <%= spark.width %> <%= spark.height %>" width="<%= spark.width %>" height="<%= spark.height %>" role="img" aria-label="Your last <%= spark.samples %> <%= key %> ratings, <%= spark.change >= 0 ? 'up' : 'down' %> <%= Math.abs(Math.round(spark.change)) %> overall" class="max-w-full">
+      <polyline points="<%= spark.points %>" fill="none" stroke="rgb(var(--ballpoint))" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="<%= spark.last[0] %>" cy="<%= spark.last[1] %>" r="3.5" fill="rgb(var(--ballpoint))"/>
+    </svg>
+    <figcaption class="text-xs text-muted">Last <%= spark.samples %> answers</figcaption>
+  </figure>
+  <% } %>
+</header>
 
-<div class="container mb-5">
-  <a href="/train"><button type="button" class="btn btn-secondary" id="exit">Exit</button></a>
-  <a href="/train/<%= subject %>/displayQuestion?units=<%=units%>"><button type="button" class="btn btn-primary" id="tryanother">Try Another Question</button></a>
-  <button type="button" class="btn btn-danger btn-small float-end" id="report" data-bs-toggle="modal" data-bs-target="#contact-modal">Contact us</button>
-  <%- include ("../../partials/contact", { questionId: newQues._id, redirect: "/train/" + subject + "/displayQuestion?units=" + units }) -%>
-</div>
+<section class="rule-top mt-8" aria-labelledby="q-title">
+  <h2 id="q-title" class="sr-only">The question</h2>
+  <div class="paper max-w-3xl"><%- newQues.question %></div>
 
-<%- include("../../partials/footer") -%>
+  <% if (newQues.type === 'mc' || newQues.type === 'sa') { %>
+  <ul class="mt-6 grid max-w-3xl gap-2">
+    <% newQues.choices.forEach((choice, idx) => { const n = String(idx + 1);
+         const isRight = right.includes(n); const picked = mine.includes(n); %>
+    <li class="choice-static <%= isRight ? 'choice-right' : (picked ? 'choice-wrong' : '') %>">
+      <span class="bubble"><%= letter(idx + 1) %></span>
+      <span class="paper-sm flex-1"><%= choice %></span>
+      <% if (isRight && picked) { %><span class="text-sm font-semibold pencil-good">Your answer, correct</span>
+      <% } else if (isRight) { %><span class="text-sm font-semibold pencil-good">Correct answer</span>
+      <% } else if (picked) { %><span class="text-sm font-semibold text-redpen">Your answer</span><% } %>
+    </li>
+    <% }) %>
+  </ul>
+  <% } else if (newQues.type === 'fr') { %>
+  <dl class="mt-6 grid max-w-md grid-cols-[auto_1fr] gap-x-6 gap-y-2">
+    <dt class="text-muted">You answered</dt><dd class="font-semibold <%= correct ? 'pencil-good' : 'text-redpen' %>"><%= mine.join(', ') %></dd>
+    <dt class="text-muted">Correct answer</dt><dd class="font-semibold"><%= right.join(', ') %></dd>
+  </dl>
+  <% } %>
+</section>
+
+<section class="rule-top mt-10" aria-labelledby="ex-title">
+  <h2 id="ex-title" class="section-title">Explanation</h2>
+  <div class="paper mt-3 max-w-3xl"><%- newQues.answer_ex %></div>
+  <% if (newQues.source_statement) { %><p class="mt-4 text-sm text-muted"><%= newQues.source_statement %></p><% } %>
+</section>
+
+<%- include('../../partials/app/tutor.ejs', { aiQuestionId: newQues._id, aiPhase: 'after', aiUserAnswer: userAnswer, aiCorrect: correct }) %>
+
+<section class="rule-top mt-10" aria-labelledby="facts-title">
+  <h2 id="facts-title" class="section-title">About this question</h2>
+  <dl class="mt-3 grid max-w-xl grid-cols-[auto_1fr] gap-x-8 gap-y-2">
+    <dt class="text-muted">Rating</dt><dd><%= oldQ %></dd>
+    <dt class="text-muted">Solved by</dt>
+    <dd><%= passRate === null ? 'No one yet' : passRate + '% of ' + attempts + ' attempts' %></dd>
+    <% if (newQues.ext_source != 'original') { %><dt class="text-muted">Source</dt><dd><%= newQues.ext_source %></dd><% } %>
+    <% if (newQues.tags && newQues.tags.length) { %>
+    <dt class="text-muted">Tags</dt>
+    <dd class="flex flex-wrap gap-1.5"><% newQues.tags.forEach((tag) => { %><span class="chip"><%= tag %></span><% }) %></dd>
+    <% } %>
+  </dl>
+</section>
+
+<div class="mt-10 flex flex-wrap items-center gap-3">
+  <a class="btn btn-primary" href="<%= next %>" id="tryanother" <%= correct ? 'autofocus' : '' %>>Next question</a>
+  <a class="btn btn-outline" href="/train" id="exit">Finish</a>
+  <span class="flex-1"></span>
+  <%- include('../../partials/app/contact.ejs', { questionId: newQues._id, redirect: next }) %>
+</div>

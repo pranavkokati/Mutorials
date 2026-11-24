@@ -1,57 +1,57 @@
-<%#
-  Search, rendered inside layouts/app.ejs.
-  ARGUMENTS: results, semantic, query, hasQuery, subjectTags (tag dictionary)
-%>
+<%# Search, rendered inside layouts/app.ejs. ARGUMENTS: results, semantic, query, hasQuery, subjectTags %>
 <%
   const str = (v) => (typeof v === 'string' ? v : '');
   const selected = str(query.subjects).split(',').map((s) => s.trim()).filter(Boolean);
   const subjectNames = Object.keys(subjectTags || {});
   const hrefFor = (r) => r.type === 'QUESTION' ? '/train/displayQuestion/' + r.id : (r.type === 'USER' ? '/profile/' + encodeURIComponent(r.id) : '#');
+  const kind = (t) => ({ QUESTION: 'Question', USER: 'Trainer' }[t] || t);
 %>
-
 <h1 class="page-title">Search</h1>
-<p class="page-lead">Find questions by keyword or by meaning, and look up other trainers.</p>
+<p class="page-lead">Find questions by words or by meaning, or look up another trainer.</p>
 
-<form class="card card-pad mt-6 grid gap-3 sm:grid-cols-[1fr_14rem_auto]" action="/search" method="GET" role="search">
+<form class="mt-8 flex flex-col gap-3 sm:flex-row" action="/search" method="GET" role="search">
   <label class="sr-only" for="q">Search text</label>
-  <input id="q" name="text" type="search" class="w-full rounded-lg" placeholder="e.g. spring oscillation, enzyme inhibition, username" value="<%= str(query.text) %>" maxlength="200" autofocus>
+  <input id="q" name="text" type="search" class="min-w-0 flex-1 !py-3" placeholder="spring oscillation, enzyme inhibition, a username" value="<%= str(query.text) %>" maxlength="200" autofocus>
   <label class="sr-only" for="subjects">Subject</label>
-  <select id="subjects" name="subjects" class="w-full rounded-lg">
+  <select id="subjects" name="subjects" class="!py-3 sm:w-52">
     <option value="">Any subject</option>
     <% subjectNames.forEach((name) => { %>
     <option value="<%= name %>" <%= selected[0] === name ? 'selected' : '' %>><%= name %></option>
     <% }) %>
   </select>
-  <button class="btn btn-primary" type="submit">Search</button>
+  <button class="btn btn-primary !px-6" type="submit">Search</button>
 </form>
 
 <% if (results.length > 0) { %>
-  <h2 class="mt-8 text-lg font-bold"><%= results.length %> result<%= results.length === 1 ? '' : 's' %></h2>
-  <ul class="mt-3 grid gap-3">
+  <h2 class="section-title mt-12"><%= results.length %> result<%= results.length === 1 ? '' : 's' %></h2>
+  <ul class="rows mt-3">
     <% results.forEach((r) => { %>
     <li>
-      <a class="card-link card-pad block" href="<%= hrefFor(r) %>">
-        <div class="flex items-center gap-2"><span class="badge"><%= r.type %></span><span class="font-semibold"><%= r.title %></span></div>
-        <p class="mt-1 text-sm muted"><%= r.snippet || r.preview %></p>
+      <a class="row-link" href="<%= hrefFor(r) %>">
+        <span class="flex items-baseline justify-between gap-4">
+          <span class="font-semibold"><%= r.title %></span>
+          <span class="text-sm text-muted"><%= kind(r.type) %></span>
+        </span>
+        <span class="paper-sm mt-1 line-clamp-2 block text-muted"><%= r.snippet || r.preview %></span>
       </a>
     </li>
     <% }) %>
   </ul>
 <% } else if (hasQuery && !(semantic && semantic.length > 0)) { %>
-  <div class="mt-8 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-200" role="status">
-    No results for <code class="font-mono"><%= JSON.stringify(str(query.text)) %></code>.
-  </div>
+  <p class="mt-12 max-w-prose" role="status">
+    No results for <span class="font-semibold"><%= JSON.stringify(str(query.text)) %></span>. Try fewer or different words, or remove the subject filter.
+  </p>
 <% } %>
 
 <% if (semantic && semantic.length > 0) { %>
-  <h2 class="mt-8 text-lg font-bold">Related by meaning</h2>
-  <p class="mt-1 text-sm muted">Questions close in meaning to your search even when the words differ. Ranked by an on-server language model, so some may be only loosely related.</p>
-  <ul class="mt-3 grid gap-3">
+  <h2 class="section-title mt-12">Related by meaning</h2>
+  <p class="mt-1 max-w-prose text-sm text-muted">These questions are close in meaning to your search even when the words differ. A language model running on this server ranks them, so some may be only loosely related.</p>
+  <ul class="rows mt-3">
     <% semantic.forEach((r) => { %>
     <li>
-      <a class="card-link card-pad block" href="/train/displayQuestion/<%= r.id %>">
-        <div class="flex items-center gap-2"><span class="badge badge-info">Meaning</span><span class="font-semibold"><%= r.title %></span></div>
-        <p class="mt-1 text-sm muted"><%= r.snippet || r.preview %></p>
+      <a class="row-link" href="/train/displayQuestion/<%= r.id %>">
+        <span class="font-semibold"><%= r.title %></span>
+        <span class="paper-sm mt-1 line-clamp-2 block text-muted"><%= r.snippet || r.preview %></span>
       </a>
     </li>
     <% }) %>

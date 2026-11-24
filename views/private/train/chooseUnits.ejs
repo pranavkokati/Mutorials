@@ -1,141 +1,76 @@
-<%# Page to select units for training %>
-<%# ARGUMENTS: units - list of units to train on, subject - the subject, unitPresets - object of unit presets, qNum - weird ID number %>
+<%# Choose units, rendered inside layouts/app.ejs %>
+<%# ARGUMENTS: units - all units, subject, unitPresets - { name: [units] }, qNum %>
+<p class="text-sm text-muted"><a class="link" href="/train">Train</a> / <a class="link" href="/train/chooseSubject">Classic training</a> / <%= subject %></p>
+<h1 class="page-title mt-6"><%= subject %>: choose units</h1>
+<p class="page-lead">Questions come only from the units you tick. Your choice is remembered for next time.</p>
 
-<%- include("../../partials/header") -%>
-<%- include("../../partials/navigationPrivate") -%>
-
-<script>
-  $(document).ready(function() {
-    // TEMPORARY: hide unused units on frontend (physics only right now)
-    if ('<%= subject %>' == 'Physics') {
-      var toHide = [];
-      toHide.forEach((element) => {
-        console.log('Now hidden: ' + element);
-        document.getElementById('DIV ' + element).style.display = 'none';
-      });
-    }
-
-    // function to set cookie data
-    let saveSelectionAsCookie = () => {
-      units = [];
-      let unitInputs = document.getElementsByName('unitChoice');
-      for (let i = 0; i < unitInputs.length; i++) {
-        if (unitInputs[i].checked) {
-          units.push(unitInputs[i].id);
-        }
-      }
-
-      let cookieData = units.join('@');
-      if (cookieData == '') {
-        cookieData = 'none';
-      }
-      document.cookie = cookieData;
-    };
-
-    // make select and deselect all buttons work
-    $('#select-all').click(function() {
-      document.getElementsByName('unitChoice').forEach((checkbox) => {
-        if (checkbox.type == 'checkbox') {
-          checkbox.checked = true;
-        }
-        saveSelectionAsCookie();
-      });
-    });
-    $('#deselect-all').click(function() {
-      document.getElementsByName('unitChoice').forEach((checkbox) => {
-        if (checkbox.type == 'checkbox') {
-          checkbox.checked = false;
-        }
-        saveSelectionAsCookie();
-      });
-    });
-
-    // make unit clustering buttons work
-    var unitPresets = JSON.parse($('#stringifiedUnits').val());
-    Object.keys(unitPresets).forEach((preset) => {
-      $(document.getElementById(preset.replace(/\s+/g, ''))).click(function() {
-        document.getElementsByName('unitChoice').forEach((checkbox) => {
-          if (checkbox.type == 'checkbox') {
-            checkbox.checked = false;
-          }
-        });
-
-        unitPresets[preset].forEach((unit) => {
-          document.getElementById(unit).checked = true;
-        });
-
-        saveSelectionAsCookie();
-      });
-    });
-
-    // cookies to save current selection of units upon change and load last selection upon loading
-    $('.unit-checkbox').change(function() {
-      saveSelectionAsCookie();
-    });
-
-    let savedSelection = document.cookie.split(';')[0].split('@');
-    try {
-      savedSelection.forEach((unit) => {
-        document.getElementById(unit).checked = true;
-      });
-    } catch (error) {
-      console.log('Hit end of saved last selection');
-    }
-  });
-</script>
-
-
-<div class="jumbotron container mt-5">
-  <%- include ("../../partials/flashes") -%>
-  <h1 class="display-2 text-center"><%= subject %></h1>
-
-  <div class="row">
-    <div class="col-lg-1"></div>
-
-    <div class="col-12 col-lg-6 mt-5">
-      <h3 class="mb-2">Select units to train in:</h3>
-
-      <form action="/selQ" method="POST">
-        <div id="units">
-          <% units.forEach((unit) => { %>
-          <div class="form-check my-1 me-sm-2" id="DIV <%= unit %>">
-            <input type="checkbox" name="unitChoice" class="form-check-input unit-checkbox" id="<%= unit %>" value="<%= subject %> - <%= unit %>">
-            <label class="form-check-label" for="<%= unit %>"><%= unit %></label>
-          </div>
-          <% }) %>
-        </div>
-
-        <div class="mt-4">
-          <a href="/train/chooseSubject"><button type="button" class="btn btn-secondary" id="previous">Previous</button></a>
-          <input type="submit" class="btn btn-primary" id="next" value="Next">
-        </div>
-
-        <input type="hidden" name="qNum" value="<%= qNum %>">
-        <input type="hidden" name="subj" value="<%= subject %>">
-      </form>
-    </div>
-
-    <div class="col-12 col-lg-4 mt-5">
-      <h3 class="mb-2">Quick Select</h3>
-
-      <button type="button" class="btn my-1 btn-warning w-100" id="select-all">
-        <font color="white">Select All</font>
-      </button>
-      <button type="button" class="btn my-1 btn-warning w-100" id="deselect-all">
-        <font color="white">Deselect All</font>
-      </button>
-
-      <% if(Object.entries(unitPresets).length > 0) { %>
-      <% Object.entries(unitPresets).forEach((preset) => { %>
-      <button type="button" class="btn my-1 btn-info w-100" id="<%= preset[0].replace(/\s+/g, '') %>"><%= preset[0] %></button>
-      <% }); %>
-      <% } %>
-
-      <input type="hidden" id="stringifiedUnits" value="<%= JSON.stringify(unitPresets) %>">
-    </div>
+<form action="/selQ" method="POST" class="mt-8" id="unit-form">
+  <% const presets = Object.entries(unitPresets || {}); %>
+  <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Quick selection">
+    <button type="button" class="btn btn-outline" id="select-all">Select all</button>
+    <button type="button" class="btn btn-outline" id="deselect-all">Clear</button>
+    <% presets.forEach(([name, list]) => { %>
+    <button type="button" class="btn btn-outline" data-preset="<%= JSON.stringify(list) %>"><%= name %></button>
+    <% }) %>
   </div>
 
-  <div class="col-lg-1"></div>
-</div>
+  <fieldset class="mt-6">
+    <legend class="sr-only">Units</legend>
+    <div class="grid gap-2 sm:grid-cols-2">
+      <% units.forEach((unit) => { %>
+      <label class="choice items-center">
+        <input type="checkbox" name="unitChoice" class="unit-checkbox" id="<%= unit %>" value="<%= subject %> - <%= unit %>">
+        <span class="bubble bubble-tick !mt-0" aria-hidden="true">&#10003;</span>
+        <span><%= unit %></span>
+      </label>
+      <% }) %>
+    </div>
+  </fieldset>
 
-<%- include("../../partials/footer") -%>
+  <input type="hidden" name="qNum" value="<%= qNum %>">
+  <input type="hidden" name="subj" value="<%= subject %>">
+  <div class="mt-8 flex flex-wrap items-center gap-3">
+    <button type="submit" class="btn btn-primary" id="next">Start practising</button>
+    <a class="btn btn-outline" href="/train/chooseSubject">Back</a>
+    <p class="text-sm text-muted" id="unit-count" aria-live="polite"></p>
+  </div>
+</form>
+
+<script>
+  (function () {
+    var KEY = 'mu-units-<%= subject %>';
+    var boxes = Array.prototype.slice.call(document.querySelectorAll('.unit-checkbox'));
+    var count = document.getElementById('unit-count');
+
+    function save() {
+      var on = boxes.filter(function (b) { return b.checked; }).map(function (b) { return b.id; });
+      try { localStorage.setItem(KEY, JSON.stringify(on)); } catch (e) {}
+      count.textContent = on.length + ' of ' + boxes.length + ' units selected';
+    }
+    function setAll(value) { boxes.forEach(function (b) { b.checked = value; }); save(); }
+
+    try {
+      var saved = JSON.parse(localStorage.getItem(KEY) || '[]');
+      boxes.forEach(function (b) { b.checked = saved.indexOf(b.id) !== -1; });
+    } catch (e) {}
+    save();
+
+    boxes.forEach(function (b) { b.addEventListener('change', save); });
+    document.getElementById('select-all').addEventListener('click', function () { setAll(true); });
+    document.getElementById('deselect-all').addEventListener('click', function () { setAll(false); });
+    document.querySelectorAll('[data-preset]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var list = JSON.parse(btn.getAttribute('data-preset'));
+        boxes.forEach(function (b) { b.checked = list.indexOf(b.id) !== -1; });
+        save();
+      });
+    });
+    document.getElementById('unit-form').addEventListener('submit', function (e) {
+      if (!boxes.some(function (b) { return b.checked; })) {
+        e.preventDefault();
+        count.textContent = 'Choose at least one unit.';
+        count.classList.add('pen-weak');
+      }
+    });
+  })();
+</script>

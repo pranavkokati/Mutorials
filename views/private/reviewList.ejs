@@ -1,31 +1,23 @@
 <%# Spaced review queue, rendered inside layouts/app.ejs. ARGUMENTS: items, intervals %>
-
-<h1 class="page-title">Spaced Review</h1>
+<h1 class="page-title">Spaced review</h1>
 <p class="page-lead">
-  Questions you missed come back after <%= intervals.join(', ') %> days as you get them right.
-  Review answers never change your rating.
+  Questions you missed return after <%= intervals.join(', ') %> days as you answer them correctly. Review never changes your rating.
 </p>
 
 <% if (items.length === 0) { %>
-<div class="card card-pad mt-8 text-center">
-  <p class="font-semibold">Nothing is due.</p>
-  <p class="mt-1 text-sm muted">Missed questions appear here when it is time to revisit them.</p>
-  <a class="btn btn-primary mt-4 w-fit" href="/train">Go practise</a>
-</div>
+<p class="mt-10 max-w-prose">Nothing is due. Questions you miss will appear here when it is time to revisit them.</p>
+<a class="btn btn-primary mt-4" href="/train">Go practise</a>
 <% } else { %>
-<p class="mt-6 text-sm muted"><%= items.length %> due</p>
-<ul class="mt-2 grid gap-3">
+<p class="mt-10 text-sm text-muted"><span class="mark"><%= items.length %></span> due</p>
+<ul class="rows mt-3">
   <% items.forEach((item) => { %>
   <li>
-    <a class="card-link card-pad block" href="/review/<%= item.question %>">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <span class="font-semibold"><%= item.subject.charAt(0).toUpperCase() + item.subject.slice(1) %></span>
-        <span class="flex gap-2">
-          <span class="badge">Step <%= item.box + 1 %> of <%= intervals.length %></span>
-          <span class="badge <%= item.overdueDays <= 0 ? 'badge-info' : 'badge-warn' %>"><%= item.overdueDays <= 0 ? 'Due now' : item.overdueDays + ' days overdue' %></span>
-        </span>
-      </div>
-      <p class="mt-2 text-sm"><%= item.preview %></p>
+    <a class="row-link grid gap-1 sm:grid-cols-[1fr_auto] sm:gap-8" href="/review/<%= item.question %>">
+      <span class="paper-sm line-clamp-2"><%= item.preview %></span>
+      <span class="text-sm text-muted sm:text-right">
+        <span class="font-medium text-ink"><%= item.subject.charAt(0).toUpperCase() + item.subject.slice(1) %></span><br>
+        Step <%= item.box + 1 %> of <%= intervals.length %>, <%= item.overdueDays < 1 ? 'due now' : Math.floor(item.overdueDays) + (Math.floor(item.overdueDays) === 1 ? ' day overdue' : ' days overdue') %>
+      </span>
     </a>
   </li>
   <% }) %>

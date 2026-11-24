@@ -1,0 +1,16 @@
+<%# Report a problem / send feedback, as a native <dialog>. ARGUMENTS (optional): questionId, redirect, label %>
+<button type="button" class="btn-quiet" data-dialog-open="contact-dialog"><%= locals.label || 'Report a problem' %></button>
+<dialog id="contact-dialog" class="w-[min(32rem,calc(100vw-2rem))] rounded-2xl border border-rule bg-sheet p-0 text-ink backdrop:bg-black/50">
+  <form method="post" action="/contact" class="p-6">
+    <h2 class="section-title">Tell us what's wrong</h2>
+    <p class="mt-1 text-sm text-muted">A wrong answer key, a broken equation or a confusing question. An admin reads every message.</p>
+    <% if (locals.questionId) { %><input type="hidden" name="questionId" value="<%= questionId %>"><% } %>
+    <% if (locals.redirect) { %><input type="hidden" name="redirect" value="<%= redirect %>"><% } %>
+    <label class="mt-4 block text-sm font-medium" for="contact-comment">Message</label>
+    <textarea id="contact-comment" name="comment" rows="6" required class="mt-1 w-full rounded-lg border border-rule bg-sheet text-ink focus:border-ballpoint focus:ring-2 focus:ring-ballpoint/30"></textarea>
+    <div class="mt-4 flex justify-end gap-2">
+      <button type="button" class="btn btn-outline" data-dialog-close>Cancel</button>
+      <button type="submit" class="btn btn-primary">Send message</button>
+    </div>
+  </form>
+</dialog>

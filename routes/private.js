@@ -14,7 +14,7 @@ const { ai } = require('../utils/config');
 const { getIndex } = require('../utils/ai/runtime');
 const { semanticQuestions } = require('../utils/ai/search');
 const { appLayout } = require('../utils/middleware/appLayout');
-const { ratingCards, levelProgress } = require('../utils/functions/dashboard');
+const { ratingChart, levelProgress } = require('../utils/functions/dashboard');
 const { countDueReviews } = require('../utils/functions/coachData');
 
 const VIEWS = __dirname + '/../views/';
@@ -61,7 +61,7 @@ module.exports = (app, mongo) => {
       admin: isAdmin(req.user),
       experienceStats,
       levelPct: levelProgress(experienceStats),
-      ratingCards: ratingCards(req.user),
+      chart: ratingChart(req.user),
       reviewDue,
       question,
       announcements,

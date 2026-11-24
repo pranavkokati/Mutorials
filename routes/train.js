@@ -2,6 +2,7 @@
 const {
   ratingCeilingFloor,
   calculateLevel,
+  expectedScore,
 } = require('../utils/functions/siteAlgorithms');
 const { presetUnitOptions } = require('../utils/constants/presets');
 const { subjectUnitDictionary } = require('../utils/constants/subjects');
@@ -50,6 +51,26 @@ function validUnits(subject, requested) {
 }
 
 const { appLayout } = require('../utils/middleware/appLayout');
+const { sparkline } = require('../utils/functions/dashboard');
+
+/** Extra values the question and answer pages show next to the question. */
+function questionContext(user, question, subjectName) {
+  const key = String(subjectName).toLowerCase();
+  const rating = user.rating[key];
+  const { pass = 0, fail = 0 } = question.stats || {};
+  return {
+    winChance:
+      typeof rating === 'number' && rating > 0
+        ? Math.round(expectedScore(rating, question.rating) * 100)
+        : null,
+    passRate: pass + fail > 0 ? Math.round((100 * pass) / (pass + fail)) : null,
+    attempts: pass + fail,
+    spark: sparkline(user.stats.ratingTracker[key], {
+      width: 240,
+      height: 64,
+    }),
+  };
+}
 
 module.exports = (app, mongo) => {
   app.all(/^(\/private|\/selQ|\/train).*$/, (req, res, next) => {
@@ -114,6 +135,7 @@ module.exports = (app, mongo) => {
 
   app.post(
     '/train/checkAnswer',
+    appLayout,
     wrap(async (req, res) => {
       const question =
         toObjectId(req.body.id) && (await getQuestion(mongo.Ques, req.body.id));
@@ -168,6 +190,7 @@ module.exports = (app, mongo) => {
         user: req.user,
         experienceStats,
         pageName: 'Answer Explanation',
+        ...questionContext(req.user, question, subjectName),
       });
     }),
   );
@@ -201,6 +224,7 @@ module.exports = (app, mongo) => {
 
   app.get(
     '/train/daily',
+    appLayout,
     wrap(async (req, res) => {
       const date = new Date().toISOString().split('T')[0];
       const question = await getDailyQuestion(mongo.Daily, mongo.Ques);
@@ -360,7 +384,7 @@ module.exports = (app, mongo) => {
     }),
   );
 
-  app.get('/train/:subject/proficiency', (req, res) => {
+  app.get('/train/:subject/proficiency', appLayout, (req, res) => {
     const subject = canonicalSubject(req.params.subject);
     if (!subject) return res.redirect('/train/chooseSubject');
     res.render(VIEWS + 'private/train/setProficiency.ejs', {
@@ -369,7 +393,7 @@ module.exports = (app, mongo) => {
     });
   });
 
-  app.get('/train/:subject/chooseUnits', (req, res) => {
+  app.get('/train/:subject/chooseUnits', appLayout, (req, res) => {
     const subject = canonicalSubject(req.params.subject);
     if (!subject) return res.redirect('/train/chooseSubject');
     if (req.user.rating[subject.toLowerCase()] == -1) {
@@ -387,6 +411,7 @@ module.exports = (app, mongo) => {
 
   app.get(
     '/train/:subject/displayQuestion',
+    appLayout,
     wrap(async (req, res) => {
       const subject = canonicalSubject(req.params.subject);
       if (!subject) return res.redirect('/train/chooseSubject');
@@ -440,6 +465,7 @@ module.exports = (app, mongo) => {
           experienceStats,
           pageName: 'Classic Trainer',
           referenceSheet,
+          ...questionContext(req.user, question, subject),
         });
       };
 
@@ -497,6 +523,7 @@ module.exports = (app, mongo) => {
 
   app.get(
     '/train/displayQuestion/:id',
+    appLayout,
     wrap(async (req, res) => {
       const question =
         toObjectId(req.params.id) &&
@@ -517,6 +544,7 @@ module.exports = (app, mongo) => {
         pageName: 'Classic Trainer',
         disabled: true,
         referenceSheet,
+        ...questionContext(req.user, question, question.subject[0]),
       });
     }),
   );

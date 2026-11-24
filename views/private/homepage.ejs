@@ -1,149 +1,172 @@
 <%#
-  Signed-in dashboard, rendered inside layouts/app.ejs.
-  ARGUMENTS: user, experienceStats, levelPct, ratingCards, reviewDue,
-             siteStats, question, announcements, admin
+  Signed-in home, rendered inside layouts/app.ejs.
+  ARGUMENTS: user, experienceStats, levelPct, chart, reviewDue, siteStats,
+             question, announcements, admin
 %>
+<% const signed = (n) => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n) %>
 
-<section aria-labelledby="welcome">
-  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-    <div>
-      <h1 id="welcome" class="page-title">Welcome back, <%= user.ign %></h1>
-      <p class="page-lead">Pick up where you left off, or let the coach choose your next unit.</p>
-    </div>
-    <div class="w-full sm:w-72">
-      <div class="mb-1 flex items-baseline justify-between text-sm">
-        <span class="font-semibold">Level <%= experienceStats.level %></span>
-        <span class="muted"><%= experienceStats.remainder %> / <%= experienceStats.totalToNext %> XP</span>
-      </div>
-      <div class="progress" role="progressbar" aria-label="Progress to level <%= experienceStats.level + 1 %>" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= levelPct %>">
-        <span style="width: <%= levelPct %>%"></span>
-      </div>
+<header class="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+  <div>
+    <h1 class="page-title">Welcome back, <%= user.ign %></h1>
+    <p class="page-lead">Your ratings, what is due, and where to practise next.</p>
+  </div>
+  <div class="w-full sm:w-64">
+    <p class="text-sm">
+      <span class="font-semibold">Level <%= experienceStats.level %></span><span class="muted">, <%= experienceStats.remainder %> of <%= experienceStats.totalToNext %> XP to level <%= experienceStats.level + 1 %></span>
+    </p>
+    <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-rule" role="progressbar" aria-label="Progress to level <%= experienceStats.level + 1 %>" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= levelPct %>">
+      <div class="h-full rounded-full bg-ballpoint" style="width: <%= levelPct %>%"></div>
     </div>
   </div>
-</section>
+</header>
 
-<section class="mt-8 grid gap-4 md:grid-cols-3" aria-label="Where to go next">
-  <a class="card-link card-pad" href="/coach">
-    <p class="text-sm font-semibold text-brand-600 dark:text-brand-200">Study Coach</p>
-    <h2 class="mt-1 text-lg font-bold">Find your weak spots</h2>
-    <p class="mt-1 text-sm muted">Units where you do worse than your rating predicts, with a next unit to practise.</p>
-  </a>
-  <a class="card-link card-pad" href="/review">
-    <div class="flex items-center justify-between">
-      <p class="text-sm font-semibold text-brand-600 dark:text-brand-200">Spaced Review</p>
-      <% if (reviewDue > 0) { %><span class="badge badge-warn"><%= reviewDue %> due</span><% } else { %><span class="badge badge-good">All caught up</span><% } %>
-    </div>
-    <h2 class="mt-1 text-lg font-bold">Revisit missed questions</h2>
-    <p class="mt-1 text-sm muted">Questions you missed return on a schedule until they stick. Never changes your rating.</p>
-  </a>
-  <a class="card-link card-pad" href="/train">
-    <p class="text-sm font-semibold text-brand-600 dark:text-brand-200">Train</p>
-    <h2 class="mt-1 text-lg font-bold">Classic, Rush or Daily</h2>
-    <p class="mt-1 text-sm muted">Adaptive practice by subject and unit, a timed rush, or today's challenge question.</p>
-  </a>
-</section>
+<section class="mt-12" aria-labelledby="history-h">
+  <h2 id="history-h" class="section-title">Rating history</h2>
 
-<section class="mt-10" aria-labelledby="ratings-h">
-  <div class="flex items-baseline justify-between">
-    <h2 id="ratings-h" class="text-xl font-bold">Your ratings</h2>
-    <a class="text-sm underline hover:no-underline" href="/stats">Full statistics</a>
-  </div>
-  <ul class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    <% ratingCards.forEach((c) => { %>
-    <li>
-      <a class="card-link card-pad flex h-full flex-col" href="<%= c.href %>">
-        <div class="flex items-center justify-between">
-          <span class="flex items-center gap-2 font-semibold">
-            <span class="inline-block h-2.5 w-2.5 rounded-full" style="background: <%= c.color %>"></span>
-            <%= c.label %>
-          </span>
-          <% if (c.rated && c.trend) { %>
-            <span class="text-xs font-medium <%= c.trend.change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' %>">
-              <%= c.trend.change >= 0 ? '+' : '−' %><%= Math.abs(Math.round(c.trend.change)) %>
-              <span class="muted">/ last <%= c.trend.samples %></span>
-            </span>
-          <% } %>
+  <% if (chart.empty) { %>
+    <p class="mt-3 max-w-prose muted">
+      Nothing to plot yet. Answer a few questions in a rated subject and your history will draw here.
+    </p>
+    <a class="btn btn-primary mt-4" href="/train">Start training</a>
+  <% } else { %>
+    <p class="mt-1 text-sm muted">Each line is one subject, ending at your latest answer (up to the last <%= chart.answers %>).</p>
+    <figure class="mt-6" role="img" aria-label="Line chart of rating history. <%= chart.series.map((s) => s.short + ' ' + s.rating + ', ' + (s.change >= 0 ? 'up ' : 'down ') + Math.abs(s.change)).join('. ') %>.">
+      <div class="grid grid-cols-[2.75rem_1fr_6.5rem] sm:grid-cols-[3rem_1fr_8rem]">
+        <div class="relative h-64 sm:h-72" aria-hidden="true">
+          <% chart.ticks.forEach((t) => { %>
+            <span class="absolute right-2 -translate-y-1/2 text-xs muted tabular-nums" style="top: <%= t.y %>%"><%= t.value %></span>
+          <% }) %>
         </div>
-        <div class="mt-2 flex items-end justify-between gap-3">
-          <% if (c.rated) { %>
-            <span class="text-3xl font-bold tabular-nums"><%= c.rating %></span>
-          <% } else { %>
-            <span class="text-lg font-semibold muted">Not rated yet</span>
-          <% } %>
-          <% if (c.trend) { %>
-            <svg viewBox="0 0 <%= c.trend.width %> <%= c.trend.height %>" width="<%= c.trend.width %>" height="<%= c.trend.height %>" role="img" aria-label="<%= c.label %> rating trend over <%= c.trend.samples %> answers" class="shrink-0">
-              <polyline fill="none" stroke="<%= c.color %>" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="<%= c.trend.points %>"/>
-              <circle cx="<%= c.trend.last[0] %>" cy="<%= c.trend.last[1] %>" r="3" fill="<%= c.color %>"/>
-            </svg>
-          <% } %>
+        <div class="relative h-64 sm:h-72" aria-hidden="true">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="absolute inset-0 h-full w-full overflow-visible">
+            <% chart.ticks.forEach((t) => { %>
+              <line x1="0" x2="100" y1="<%= t.y %>" y2="<%= t.y %>" stroke="rgb(var(--rule))" stroke-width="1" vector-effect="non-scaling-stroke"/>
+            <% }) %>
+            <g class="plot-lines">
+              <% chart.series.forEach((s) => { %>
+                <polyline fill="none" stroke="<%= s.color %>" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" points="<%= s.points %>"/>
+              <% }) %>
+            </g>
+          </svg>
+          <% chart.series.forEach((s) => { %>
+            <span class="plot-label absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-sheet" style="left: <%= s.endX %>%; top: <%= s.endY %>%; background: <%= s.color %>"></span>
+          <% }) %>
         </div>
-      </a>
-    </li>
-    <% }) %>
-  </ul>
-</section>
+        <ul class="relative h-64 sm:h-72" aria-hidden="true">
+          <% chart.series.forEach((s) => { %>
+            <li class="plot-label absolute left-3 flex -translate-y-1/2 items-baseline gap-1.5 whitespace-nowrap text-sm" style="top: <%= s.labelY %>%">
+              <span class="font-semibold"><%= s.short %></span>
+              <span class="tabular-nums muted"><%= s.rating %></span>
+            </li>
+          <% }) %>
+        </ul>
+      </div>
+    </figure>
 
-<% if (user.contributor) { %>
-<section class="mt-10" aria-labelledby="contrib-h">
-  <h2 id="contrib-h" class="text-xl font-bold">Contributor tools <span class="badge badge-info ml-2"><%= user.contributor %></span></h2>
-  <div class="mt-3 flex flex-wrap gap-2">
-    <a class="btn btn-primary" href="/contributors/addQuestion">Write question</a>
-    <a class="btn btn-outline" href="/contributors/addUSABOQuestion">Write USABO question</a>
-    <% if (user.reviewer) { %><a class="btn btn-outline" href="/reviewer/reviewQuestions">Review questions</a><% } %>
-    <a class="btn btn-outline" href="/contributors/stats">My contribution stats</a>
-    <a class="btn btn-outline" href="/contributors/items">Item analysis</a>
-  </div>
-</section>
-<% } %>
-
-<% if (admin) { %>
-<section class="mt-6">
-  <a class="btn btn-outline" href="/admin/adminHomepage">Admin dashboard</a>
-</section>
-<% } %>
-
-<section class="mt-10 grid gap-6 lg:grid-cols-2">
-  <div class="card card-pad" aria-labelledby="daily-h">
-    <h2 id="daily-h" class="text-lg font-bold">Daily question</h2>
-    <p class="mt-1 text-sm muted">A new problem every day at 00:00 UTC.</p>
-    <% if (question && question.question) { %>
-      <div class="mt-3 line-clamp-4 text-sm"><%- question.question %></div>
-    <% } %>
-    <a class="btn btn-primary mt-4 w-fit" href="/train/daily">Open today's challenge</a>
-  </div>
-
-  <div class="card card-pad" aria-labelledby="news-h">
-    <div class="flex items-baseline justify-between">
-      <h2 id="news-h" class="text-lg font-bold">Announcements</h2>
-      <a class="text-sm underline hover:no-underline" href="/announcements">All</a>
-    </div>
-    <% if (announcements && announcements.length) { %>
-      <ul class="mt-3 divide-y divide-neutral-200 dark:divide-neutral-800">
-        <% announcements.forEach((a) => { %>
-          <li class="py-3 first:pt-0 last:pb-0">
-            <p class="font-semibold"><%= a.title %></p>
-            <p class="text-xs muted">Posted <%= String(a.date).split('T')[0] %></p>
-            <div class="mt-1 text-sm"><%- a.text %></div>
-          </li>
+    <table class="plain mt-6 w-full text-sm">
+      <caption class="sr-only">Rating change over the plotted answers</caption>
+      <thead class="text-left text-muted">
+        <tr>
+          <th scope="col" class="py-2 pr-4 font-medium">Subject</th>
+          <th scope="col" class="px-2 py-2 text-right font-medium">Rating</th>
+          <th scope="col" class="px-2 py-2 text-right font-medium">Change</th>
+          <th scope="col" class="py-2 pl-4 text-right font-medium"><span class="sr-only">Action</span></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-rule border-y border-rule">
+        <% chart.series.forEach((s) => { %>
+        <tr>
+          <th scope="row" class="py-3 pr-4 text-left font-medium">
+            <span class="mr-2 inline-block h-0.5 w-4 align-middle" style="background: <%= s.color %>"></span><%= s.label %>
+          </th>
+          <td class="px-2 py-3 text-right font-semibold tabular-nums"><%= s.rating %></td>
+          <td class="px-2 py-3 text-right tabular-nums <%= s.change < 0 ? 'text-redpen' : s.change > 0 ? 'text-pencil' : 'muted' %>">
+            <%= signed(s.change) %><span class="muted"> over <%= s.samples %> answers</span>
+          </td>
+          <td class="py-3 pl-4 text-right"><a class="link" href="<%= s.href %>">Train</a></td>
+        </tr>
         <% }) %>
-      </ul>
-    <% } else { %>
-      <p class="mt-3 text-sm muted">No announcements yet.</p>
-    <% } %>
-  </div>
+      </tbody>
+    </table>
+  <% } %>
+
+  <% if (chart.unplotted.length > 0) { %>
+    <p class="mt-4 text-sm muted">
+      Not enough answers to plot yet:
+      <% chart.unplotted.forEach((u, i) => { %><%= u.label %> (<%= u.rating %>)<%= i < chart.unplotted.length - 1 ? ', ' : '.' %><% }) %>
+    </p>
+  <% } %>
 </section>
 
-<section class="mt-10 grid grid-cols-3 gap-4 text-center" aria-label="Site statistics">
-  <div class="card card-pad">
-    <p class="text-3xl font-bold tabular-nums"><%= siteStats.questionCount %></p>
-    <p class="text-sm muted">Questions</p>
-  </div>
-  <div class="card card-pad">
-    <p class="text-3xl font-bold tabular-nums"><%= siteStats.tagCount %></p>
-    <p class="text-sm muted">Unit tags</p>
-  </div>
-  <div class="card card-pad">
-    <p class="text-3xl font-bold tabular-nums"><%= siteStats.totalSolves.physics + siteStats.totalSolves.chemistry + siteStats.totalSolves.biology %></p>
-    <p class="text-sm muted">Total solves</p>
-  </div>
-</section>
+<div class="mt-12 grid gap-10 border-t border-rule pt-10 lg:grid-cols-2 lg:gap-14">
+  <section aria-labelledby="today-h">
+    <h2 id="today-h" class="section-title">Today</h2>
+    <% if (reviewDue > 0) { %>
+      <p class="mt-3 max-w-prose">
+        <span class="mark"><%= reviewDue %></span> missed question<%= reviewDue === 1 ? ' is' : 's are' %> due for review.
+        Getting one right moves it to a longer interval; review never changes your rating.
+      </p>
+      <a class="btn btn-primary mt-4" href="/review">Start review</a>
+    <% } else { %>
+      <p class="mt-3 max-w-prose muted">Nothing is due for review. Questions you miss will come back here on a schedule.</p>
+    <% } %>
+    <p class="mt-8 max-w-prose">
+      Not sure what to practise? The coach compares each unit with your own rating and points to the weakest.
+    </p>
+    <p class="mt-2 flex flex-wrap gap-x-6 gap-y-1">
+      <a class="link" href="/coach">Open the coach</a>
+      <a class="link" href="/train">Choose a training mode</a>
+    </p>
+  </section>
+
+  <section aria-labelledby="daily-h">
+    <h2 id="daily-h" class="section-title">Daily problem</h2>
+    <% if (question && question.question) { %>
+      <div class="paper-sm mt-3 line-clamp-5 max-w-prose"><%- question.question %></div>
+    <% } else { %>
+      <p class="mt-3 muted">No daily problem is available yet.</p>
+    <% } %>
+    <a class="btn btn-outline mt-4" href="/train/daily">Open today's problem</a>
+  </section>
+</div>
+
+<% if ((announcements && announcements.length) || user.contributor || admin) { %>
+<div class="mt-12 grid gap-10 border-t border-rule pt-10 lg:grid-cols-2 lg:gap-14">
+  <% if (announcements && announcements.length) { %>
+  <section aria-labelledby="news-h">
+    <div class="flex items-baseline justify-between">
+      <h2 id="news-h" class="section-title">Announcements</h2>
+      <a class="link text-sm" href="/announcements">See all</a>
+    </div>
+    <ul class="mt-3 divide-y divide-rule">
+      <% announcements.forEach((a) => { %>
+        <li class="py-4 first:pt-0">
+          <p class="font-semibold"><%= a.title %></p>
+          <p class="text-sm muted">Posted <%= String(a.date).split('T')[0] %></p>
+          <div class="mt-1 max-w-prose text-sm"><%- a.text %></div>
+        </li>
+      <% }) %>
+    </ul>
+  </section>
+  <% } %>
+  <% if (user.contributor || admin) { %>
+  <section aria-labelledby="tools-h">
+    <h2 id="tools-h" class="section-title">Tools</h2>
+    <p class="mt-3 flex flex-col gap-2">
+      <% if (user.contributor) { %>
+        <a class="link" href="/contributors/addQuestion">Write a question</a>
+        <a class="link" href="/contributors/addUSABOQuestion">Write a USABO question</a>
+        <% if (user.reviewer) { %><a class="link" href="/reviewer/reviewQuestions">Review submitted questions</a><% } %>
+        <a class="link" href="/contributors/stats">My contribution stats</a>
+        <a class="link" href="/contributors/items">Item analysis</a>
+      <% } %>
+      <% if (admin) { %><a class="link" href="/admin/adminHomepage">Admin dashboard</a><% } %>
+    </p>
+  </section>
+  <% } %>
+</div>
+<% } %>
+
+<p class="mt-12 border-t border-rule pt-6 text-sm muted">
+  The bank has <%= siteStats.questionCount %> questions across <%= siteStats.tagCount %> unit tags, with <%= siteStats.totalSolves.physics + siteStats.totalSolves.chemistry + siteStats.totalSolves.biology %> solves recorded in Physics, Chemistry and Biology.
+</p>

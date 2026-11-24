@@ -349,7 +349,7 @@ test('review: a missed question is due after its interval, and a correct answer 
     .type('form')
     .send({ answerChoice: '2' });
   assert.equal(res.status, 200);
-  assert.match(res.text, /Correct\./);
+  assert.match(res.text, />Correct<\/p>/);
   assert.match(res.text, /3 days/);
 
   const logged = await ctx.mongo.Attempt.find({
@@ -391,7 +391,7 @@ test('review: a wrong answer resets to the first interval; not-due and foreign q
     .post('/review/' + due._id)
     .type('form')
     .send({ answerChoice: '1' });
-  assert.match(miss.text, /Not yet\./);
+  assert.match(miss.text, />Not this time<\/p>/);
   assert.match(miss.text, /1 day\./);
 
   const notDue = await agent.get('/review/' + fresh._id);

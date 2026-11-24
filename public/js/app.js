@@ -43,6 +43,23 @@
       }
       return;
     }
+    var opener = event.target.closest('[data-dialog-open]');
+    if (opener) {
+      var dialog = doc.getElementById(opener.getAttribute('data-dialog-open'));
+      if (dialog && dialog.showModal) dialog.showModal();
+      return;
+    }
+    var closer = event.target.closest('[data-dialog-close]');
+    if (closer) {
+      var open = closer.closest('dialog');
+      if (open) open.close();
+      return;
+    }
+    // a click on the dim backdrop closes the dialog
+    if (event.target.tagName === 'DIALOG' && event.target.open) {
+      event.target.close();
+      return;
+    }
     if (!event.target.closest('[data-menu]')) closeMenus(null);
   });
 
