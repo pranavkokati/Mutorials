@@ -10,6 +10,9 @@ const {
 const { tags } = require('../utils/constants/tags.js');
 const { toObjectId } = require('../utils/functions/ids');
 const { wrap } = require('../utils/functions/http');
+const { ai } = require('../utils/config');
+const { getIndex } = require('../utils/ai/runtime');
+const { semanticQuestions } = require('../utils/ai/search');
 
 const VIEWS = __dirname + '/../views/';
 
@@ -76,23 +79,39 @@ module.exports = (app, mongo) => {
 
   app.get('/search', async (req, res) => {
     const query = req.query;
+    let results = [];
+    let semantic = [];
 
     if (query) {
-      const results = await querySite(query, mongo.User, mongo.Ques);
-      res.render(VIEWS + 'private/search.ejs', {
-        results,
-        query,
-        pageName: 'Search',
-        subjectTags: tags,
-      });
-    } else {
-      res.render(VIEWS + 'private/search.ejs', {
-        results: [],
-        query,
-        pageName: 'Search',
-        subjectTags: tags,
-      });
+      results = await querySite(query, mongo.User, mongo.Ques);
+      if (ai.enabled) {
+        try {
+          semantic = await semanticQuestions({
+            mongo,
+            index: getIndex(mongo),
+            userKey: String(req.user._id),
+            query,
+            exclude: new Set(
+              results
+                .filter((r) => r.type === 'QUESTION')
+                .map((r) => String(r.id)),
+            ),
+          });
+        } catch (err) {
+          // optional extra: keyword results are still shown
+          console.error('[ai] semantic search failed:', err.message || err);
+        }
+      }
     }
+    res.render(VIEWS + 'private/search.ejs', {
+      results,
+      semantic,
+      query,
+      // Express 5 query objects have no prototype, so templates cannot compare them to ""
+      hasQuery: typeof query.text === 'string' && query.text.trim() !== '',
+      pageName: 'Search',
+      subjectTags: tags,
+    });
   });
 
   app.get('/logout', (req, res, next) => {
