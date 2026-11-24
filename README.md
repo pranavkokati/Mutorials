@@ -4,6 +4,33 @@
 
 Mutorials is a free, adaptive, open-source trainer for science students, created by The Mu Foundation, a 501(c)(3) nonprofit. Please see our website for more info :)
 
+## See it running locally (no setup)
+
+```bash
+npm install
+npm run demo
+```
+
+Open <http://localhost:3000> and sign in as `demo@example.com` /
+`demo-password-2026`. The demo starts a throwaway in-memory MongoDB, seeds a
+learner with rating history, generated placeholder questions and an answer log,
+and serves every page. A second account, `author@example.com` (same password),
+is a contributor, so `/contributors/items` shows item analysis.
+
+- The first run downloads a MongoDB binary for the in-memory database (about
+  100 MB, cached afterwards), so it needs internet once.
+- Data disappears when you stop the process.
+- Keep the default port 3000: the app treats other ports as production and
+  then sets secure-only cookies, which breaks sign-in over plain HTTP.
+- `npm run demo -- --ai` also loads the on-server embedding model (a one-time
+  download) so "Related by meaning" appears in search.
+- The demo questions are generated templates for exercising the app, not real
+  olympiad content.
+
+**This is not how the live site is updated.** mutorials.org is deployed by the
+Mu Foundation from the upstream repository, so changes in a fork never appear
+there. See [docs/SHIPPING.md](docs/SHIPPING.md).
+
 ## Quick start
 
 Requirements: Node 22 and a MongoDB instance (local or Atlas).

@@ -1,0 +1,27 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mutorials <%= locals.pageName ? `• ${locals.pageName}` : '' %></title>
+<link rel="icon" href="/images/icons/Icon_Main.svg?v=2" sizes="any" type="image/svg+xml">
+<meta name="color-scheme" content="light dark">
+
+<%# Theme before first paint: saved choice, else the account preference, else the OS %>
+<script>
+  (function () {
+    var serverPref = <%- JSON.stringify(locals.user && locals.user.preferences ? Boolean(locals.user.preferences.dark_mode) : null) %>;
+    var dark;
+    try {
+      var saved = localStorage.getItem('mu-theme');
+      if (saved) dark = saved === 'dark';
+    } catch (e) {}
+    if (dark === undefined) {
+      dark = serverPref !== null ? serverPref : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    document.documentElement.classList.toggle('dark', dark);
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<script defer src="/js/app.js"></script>

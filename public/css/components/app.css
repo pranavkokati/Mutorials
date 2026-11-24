@@ -1,0 +1,104 @@
+/* Shared building blocks for the signed-in app layout (views/layouts/app.ejs). */
+
+.app-surface {
+  @apply bg-neutral-50 text-neutral-900
+    dark:bg-neutral-950 dark:text-neutral-100;
+}
+
+.card {
+  @apply rounded-xl border border-neutral-200 bg-white shadow-sm
+    dark:border-neutral-800 dark:bg-neutral-900;
+}
+.card-pad {
+  @apply p-5 sm:p-6;
+}
+.card-link {
+  @apply card block transition
+    hover:border-brand-500 hover:shadow-md
+    focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500;
+}
+
+.page-title {
+  @apply text-3xl font-bold tracking-tight sm:text-4xl;
+}
+.page-lead {
+  @apply mt-2 text-neutral-600 dark:text-neutral-400;
+}
+.muted {
+  @apply text-neutral-500 dark:text-neutral-400;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
+    bg-neutral-100 text-neutral-700
+    dark:bg-neutral-800 dark:text-neutral-200;
+}
+.badge-good {
+  @apply bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300;
+}
+.badge-bad {
+  @apply bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300;
+}
+.badge-warn {
+  @apply bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300;
+}
+.badge-info {
+  @apply bg-brand-100 text-brand-700 dark:bg-brand-700/30 dark:text-brand-200;
+}
+
+.btn-outline {
+  @apply dark:bg-transparent dark:border-neutral-700 dark:hover:bg-neutral-800;
+}
+.btn-quiet {
+  @apply btn text-neutral-700 hover:bg-neutral-100
+    dark:text-neutral-200 dark:hover:bg-neutral-800;
+}
+
+.progress {
+  @apply h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800;
+}
+.progress > span {
+  @apply block h-full rounded-full bg-brand-500;
+}
+
+/* form fields inside the app keep the global input look but follow the theme */
+.app-surface input[type='text'],
+.app-surface input[type='password'],
+.app-surface input[type='email'],
+.app-surface input[type='number'],
+.app-surface select {
+  @apply bg-white dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-100;
+}
+
+/* answer options on question pages */
+.choice {
+  @apply flex cursor-pointer items-start gap-3 rounded-lg border-2 border-neutral-200 bg-white px-4 py-3 transition
+    hover:border-brand-500
+    dark:border-neutral-800 dark:bg-neutral-900;
+}
+.choice:has(input:checked) {
+  @apply border-brand-500 bg-brand-50 dark:bg-brand-700/20;
+}
+.choice input {
+  @apply mt-1;
+}
+
+.nav-link {
+  @apply rounded-md px-3 py-2 text-sm font-medium text-neutral-700 transition
+    hover:bg-neutral-100 hover:text-neutral-900
+    dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white;
+}
+.nav-link[aria-current='page'] {
+  @apply bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white;
+}
+.menu-panel {
+  @apply absolute right-0 z-30 mt-2 w-56 rounded-lg border border-neutral-200 bg-white p-1 shadow-lg
+    dark:border-neutral-800 dark:bg-neutral-900;
+}
+.menu-panel a {
+  @apply block rounded-md px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100
+    dark:text-neutral-200 dark:hover:bg-neutral-800;
+}
+.menu-panel hr {
+  @apply my-1 border-neutral-200 dark:border-neutral-800;
+}

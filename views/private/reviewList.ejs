@@ -1,31 +1,33 @@
-<%# Spaced review: missed questions that are due again %>
-<%# ARGUMENTS: items - due reviews with preview text, intervals - Leitner intervals in days %>
+<%# Spaced review queue, rendered inside layouts/app.ejs. ARGUMENTS: items, intervals %>
 
-<%- include("../partials/header") -%>
-<%- include("../partials/navigationPrivate") -%>
+<h1 class="page-title">Spaced Review</h1>
+<p class="page-lead">
+  Questions you missed come back after <%= intervals.join(', ') %> days as you get them right.
+  Review answers never change your rating.
+</p>
 
-<div class="container my-5">
-  <h1 class="text-center display-4">Spaced Review</h1>
-  <p class="text-center lead">
-    Questions you missed come back after <%= intervals.join(', ') %> days as you get them right.
-    Review answers never change your rating.
-  </p>
-
-  <% if (items.length === 0) { %>
-  <div class="alert alert-success text-center">Nothing is due. Missed questions will appear here when it is time to revisit them.</div>
-  <% } else { %>
-  <div class="list-group">
-    <% items.forEach((item) => { %>
-    <a class="list-group-item list-group-item-action" href="/review/<%= item.question %>">
-      <div class="d-flex w-100 justify-content-between">
-        <strong><%= item.subject.charAt(0).toUpperCase() + item.subject.slice(1) %></strong>
-        <small>step <%= item.box + 1 %> of <%= intervals.length %> &middot; <%= item.overdueDays <= 0 ? 'due now' : item.overdueDays + ' days overdue' %></small>
-      </div>
-      <p class="mb-1"><%= item.preview %></p>
-    </a>
-    <% }) %>
-  </div>
-  <% } %>
+<% if (items.length === 0) { %>
+<div class="card card-pad mt-8 text-center">
+  <p class="font-semibold">Nothing is due.</p>
+  <p class="mt-1 text-sm muted">Missed questions appear here when it is time to revisit them.</p>
+  <a class="btn btn-primary mt-4 w-fit" href="/train">Go practise</a>
 </div>
-
-<%- include("../partials/footer") -%>
+<% } else { %>
+<p class="mt-6 text-sm muted"><%= items.length %> due</p>
+<ul class="mt-2 grid gap-3">
+  <% items.forEach((item) => { %>
+  <li>
+    <a class="card-link card-pad block" href="/review/<%= item.question %>">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <span class="font-semibold"><%= item.subject.charAt(0).toUpperCase() + item.subject.slice(1) %></span>
+        <span class="flex gap-2">
+          <span class="badge">Step <%= item.box + 1 %> of <%= intervals.length %></span>
+          <span class="badge <%= item.overdueDays <= 0 ? 'badge-info' : 'badge-warn' %>"><%= item.overdueDays <= 0 ? 'Due now' : item.overdueDays + ' days overdue' %></span>
+        </span>
+      </div>
+      <p class="mt-2 text-sm"><%= item.preview %></p>
+    </a>
+  </li>
+  <% }) %>
+</ul>
+<% } %>

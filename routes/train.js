@@ -49,6 +49,8 @@ function validUnits(subject, requested) {
   return [...new Set(wanted.filter((unit) => known.includes(unit)))];
 }
 
+const { appLayout } = require('../utils/middleware/appLayout');
+
 module.exports = (app, mongo) => {
   app.all(/^(\/private|\/selQ|\/train).*$/, (req, res, next) => {
     if (req.isAuthenticated()) {
@@ -185,11 +187,11 @@ module.exports = (app, mongo) => {
     }),
   );
 
-  app.get('/train', (req, res) => {
+  app.get('/train', appLayout, (req, res) => {
     res.render(VIEWS + 'private/train/train.ejs', { pageName: 'Train' });
   });
 
-  app.get('/train/chooseSubject', (req, res) => {
+  app.get('/train/chooseSubject', appLayout, (req, res) => {
     res.render(VIEWS + 'private/train/chooseSubject.ejs', {
       subjects: subjectUnitDictionary,
       qNum: 0,

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const { calculateLevel } = require('./siteAlgorithms');
 const mongo = require('./mongo');
+const { toPlainText } = require('../ai/text');
 
 // default SiteData documents the application expects to exist
 const SITE_DATA_DEFAULTS = {
@@ -332,6 +333,10 @@ async function querySite(query, User, Ques) {
       title: question.subject[0] + ' (' + question.rating + ' Rated)',
       preview:
         'ID: ' + question._id + ', Relevant Tags: ' + question.tags.join(' '),
+      // readable text for result lists; `preview` is kept for existing callers
+      snippet: toPlainText(question.question, 400)
+        .replace(/\s+/g, ' ')
+        .slice(0, 200),
     };
     exactMatch ? results.unshift(entry) : results.push(entry);
   });

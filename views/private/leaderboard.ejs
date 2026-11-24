@@ -1,276 +1,42 @@
-<%# Leaderboard page to see the top trainers in each subject %>
-<%# ARGUMENTS: rankings - an object containing arrays of ranking for each subject %>
+<%# Leaderboard, rendered inside layouts/app.ejs. ARGUMENTS: rankings (physics, chem, bio, usabo, rush, experience) %>
+<%
+  const boards = [
+    { title: 'Physics', rows: rankings.physics.map((u) => [u.ign, u.rating.physics]), unit: 'Rating' },
+    { title: 'Chemistry', rows: rankings.chem.map((u) => [u.ign, u.rating.chemistry]), unit: 'Rating' },
+    { title: 'Biology', rows: rankings.bio.map((u) => [u.ign, u.rating.biology]), unit: 'Rating' },
+    { title: 'USABO', rows: rankings.usabo.map((u) => [u.ign, u.rating.usabo]), unit: 'Rating' },
+    { title: 'Problem Rush', rows: rankings.rush.map((u) => [u.ign, u.stats.rush.highscore]), unit: 'High score' },
+    { title: 'Experience', rows: rankings.experience.map((u) => [u.ign, Math.round(u.experience), 'Lv ' + u.level.level]), unit: 'XP' },
+  ];
+  const medal = ['text-amber-500', 'text-neutral-400', 'text-orange-700'];
+%>
 
-<%- include("../partials/header") -%>
-<%- include("../partials/navigationPrivate") -%>
+<h1 class="page-title">Leaderboard</h1>
+<p class="page-lead">Top trainers in each category.</p>
 
-<h1 class="my-5 container text-center display-4">Rating Leaderboard</h1>
-
-<div class="container">
-
-  <div class="row jumbotron">
-
-    <div class="col-12 col-xl-3">
-      <h3 class="text-center">Physics</h3>
-      <table class="text-center table">
-        <thead>
-          <tr>
-            <th scope="col">Rank</th>
-            <th scope="col">Username</th>
-            <th scope="col">Rating</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% let rankPhysics = 1; %>
-          <% rankings.physics.forEach((user) => { %>
-          <% let style = ""; %>
-          <% if(rankPhysics == 1) { style = "background-color:#199bd6"; } %>
-          <% if(rankPhysics == 2) { style = "background-color:#fbd009"; } %>
-          <% if(rankPhysics == 3) { style = "background-color:#e62525"; } %>
-          <% if(rankPhysics > 3) { style = "background-color:#42af47"; } %>
-          <tr style=<%= style %>>
-            <% if(rankPhysics == 1) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_First.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else if(rankPhysics == 2) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_Second.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else if(rankPhysics == 3) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_Third.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else { %>
-            <th scope="row"><%= rankPhysics %></th>
-            <% } %>
-            <td><a href="/profile/<%= user.ign %>" target="_blank" style="text-decoration: none;"><%= user.ign.length <= 15 ? user.ign : user.ign.substring(0, 12)+"..." %></a></td>
-            <td><%= user.rating.physics %></td>
-          </tr>
-          <% rankPhysics++; %>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="col-12 col-xl-3">
-      <h3 class="text-center">Chemistry</h3>
-      <table class="text-center table">
-        <thead>
-          <tr>
-            <th scope="col">Rank</th>
-            <th scope="col">Username</th>
-            <th scope="col">Rating</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% let rankChem = 1; %>
-          <% rankings.chem.forEach((user) => { %>
-          <% let style = ""; %>
-          <% if(rankChem == 1) { style = "background-color:#199bd6"; } %>
-          <% if(rankChem == 2) { style = "background-color:#fbd009"; } %>
-          <% if(rankChem == 3) { style = "background-color:#e62525"; } %>
-          <% if(rankChem > 3) { style = "background-color:#42af47"; } %>
-          <tr style=<%= style %>>
-            <% if(rankChem == 1) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_First.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else if(rankChem == 2) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_Second.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else if(rankChem == 3) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_Third.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else { %>
-            <th scope="row"><%= rankChem %></th>
-            <% } %>
-            <td><a href="/profile/<%= user.ign %>" target="_blank" style="text-decoration: none;"><%= user.ign.length <= 15 ? user.ign : user.ign.substring(0, 12)+"..." %></a></td>
-            <td><%= user.rating.chemistry %></td>
-          </tr>
-          <% rankChem++; %>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="col-12 col-xl-3">
-      <h3 class="text-center">Biology</h3>
-      <table class="text-center table">
-        <thead>
-          <tr>
-            <th scope="col">Rank</th>
-            <th scope="col">Username</th>
-            <th scope="col">Rating</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% let rankBio = 1; %>
-          <% rankings.bio.forEach((user) => { %>
-          <% let style = ""; %>
-          <% if(rankBio == 1) { style = "background-color:#199bd6"; } %>
-          <% if(rankBio == 2) { style = "background-color:#fbd009"; } %>
-          <% if(rankBio == 3) { style = "background-color:#e62525"; } %>
-          <% if(rankBio > 3) { style = "background-color:#42af47"; } %>
-          <tr style=<%= style %>>
-            <% if(rankBio == 1) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_First.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else if(rankBio == 2) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_Second.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else if(rankBio == 3) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_Third.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else { %>
-            <th scope="row"><%= rankBio %></th>
-            <% } %>
-            <td><a href="/profile/<%= user.ign %>" target="_blank" style="text-decoration: none;"><%= user.ign.length <= 15 ? user.ign : user.ign.substring(0, 12)+"..." %></a></td>
-            <td><%= user.rating.biology %></td>
-          </tr>
-          <% rankBio++; %>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="col-12 col-xl-3">
-      <h3 class="text-center">USABO</h3>
-      <table class="text-center table">
-        <thead>
-          <tr>
-            <th scope="col">Rank</th>
-            <th scope="col">Username</th>
-            <th scope="col">Rating</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% let rankUSABO = 1; %>
-          <% rankings.usabo.forEach((user) => { %>
-          <% let style = ""; %>
-          <% if(rankUSABO == 1) { style = "background-color:#199bd6"; } %>
-          <% if(rankUSABO == 2) { style = "background-color:#fbd009"; } %>
-          <% if(rankUSABO == 3) { style = "background-color:#e62525"; } %>
-          <% if(rankUSABO > 3) { style = "background-color:#42af47"; } %>
-          <tr style=<%= style %>>
-            <% if(rankUSABO == 1) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_First.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else if(rankUSABO == 2) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_Second.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else if(rankUSABO == 3) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_Third.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else { %>
-            <th scope="row"><%= rankUSABO %></th>
-            <% } %>
-            <td><a href="/profile/<%= user.ign %>" target="_blank" style="text-decoration: none;"><%= user.ign.length <= 15 ? user.ign : user.ign.substring(0, 12)+"..." %></a></td>
-            <td><%= user.rating.usabo %></td>
-          </tr>
-          <% rankUSABO++; %>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
-
-  </div>
-
+<div class="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+  <% boards.forEach((b) => { %>
+  <section class="card card-pad" aria-labelledby="lb-<%= b.title.replace(/\s/g, '') %>">
+    <h2 id="lb-<%= b.title.replace(/\s/g, '') %>" class="text-lg font-bold"><%= b.title %></h2>
+    <% if (b.rows.length === 0) { %>
+      <p class="mt-3 text-sm muted">No ranked trainers yet.</p>
+    <% } else { %>
+    <table class="mt-3 w-full text-sm">
+      <caption class="sr-only"><%= b.title %> ranking</caption>
+      <thead class="text-xs uppercase tracking-wide muted">
+        <tr><th scope="col" class="w-10 pb-1 text-left">#</th><th scope="col" class="pb-1 text-left">Trainer</th><th scope="col" class="pb-1 text-right"><%= b.unit %></th></tr>
+      </thead>
+      <tbody class="divide-y divide-neutral-100 dark:divide-neutral-800">
+        <% b.rows.forEach((row, i) => { %>
+        <tr>
+          <td class="py-2 font-bold tabular-nums <%= medal[i] || 'muted' %>"><%= i + 1 %></td>
+          <td class="py-2"><a class="font-medium hover:underline" href="/profile/<%= encodeURIComponent(row[0]) %>"><%= row[0].length <= 18 ? row[0] : row[0].slice(0, 15) + '…' %></a><% if (row[2]) { %> <span class="text-xs muted"><%= row[2] %></span><% } %></td>
+          <td class="py-2 text-right font-semibold tabular-nums"><%= row[1] %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <% } %>
+  </section>
+  <% }) %>
 </div>
-
-<h1 class="my-5 container text-center display-3">Problem Rush Leaderboard</h1>
-
-<div class="container">
-
-  <div class="row">
-
-    <div class="col-0 col-xl-2">
-    </div>
-
-    <div class="col-12 col-xl-8 jumbotron">
-      <h3 class="text-center">Highest Rush Scores</h3>
-      <table class="text-center table">
-        <thead>
-          <tr>
-            <th scope="col">Rank</th>
-            <th scope="col">Username</th>
-            <th scope="col">High Score</th>
-            <th scope="col">Attempts</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% let rankRush = 1; %>
-          <% rankings.rush.forEach((user) => { %>
-          <% let style = ""; %>
-          <% if(rankRush == 1) { style = "background-color:#199bd6"; } %>
-          <% if(rankRush == 2) { style = "background-color:#fbd009"; } %>
-          <% if(rankRush == 3) { style = "background-color:#e62525"; } %>
-          <% if(rankRush > 3) { style = "background-color:#42af47"; } %>
-          <tr style=<%= style %>>
-            <% if(rankRush == 1) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_First.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else if(rankRush == 2) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_Second.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else if(rankRush == 3) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_Third.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else { %>
-            <th scope="row"><%= rankRush %></th>
-            <% } %>
-            <td><a href="/profile/<%= user.ign %>" target="_blank" style="text-decoration: none;"><%= user.ign.length <= 33 ? user.ign : user.ign.substring(0, 30)+"..." %></a></td>
-            <td><%= user.stats.rush.highscore %></td>
-            <td><%= user.stats.rush.attempts %></td>
-          </tr>
-          <% rankRush++; %>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="col-0 col-xl-2">
-    </div>
-
-  </div>
-
-</div>
-
-<h1 class="my-5 container text-center display-3">Experience Leaderboard</h1>
-
-<div class="container">
-
-  <div class="row">
-
-    <div class="col-0 col-xl-2">
-    </div>
-
-    <div class="col-12 col-xl-8 jumbotron">
-      <h3 class="text-center">Highest Level Mutorials Users</h3>
-      <table class="text-center table">
-        <thead>
-          <tr>
-            <th scope="col">Rank</th>
-            <th scope="col">Username</th>
-            <th scope="col">Level</th>
-            <th scope="col">Experience</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% let rankExperience = 1; %>
-          <% rankings.experience.forEach((user) => { %>
-          <% let style = ""; %>
-          <% if(rankExperience == 1) { style = "background-color:#199bd6"; } %>
-          <% if(rankExperience == 2) { style = "background-color:#fbd009"; } %>
-          <% if(rankExperience == 3) { style = "background-color:#e62525"; } %>
-          <% if(rankExperience > 3) { style = "background-color:#42af47"; } %>
-          <tr style=<%= style %>>
-            <% if(rankExperience == 1) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_First.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else if(rankExperience == 2) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_Second.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else if(rankExperience == 3) { %>
-            <th scope="row"><img src="/images/icons/Leaderboard_Third.svg" width="25" height="25" class="d-inline-block align-top" alt=""></th>
-            <% } else { %>
-            <th scope="row"><%= rankExperience %></th>
-            <% } %>
-            <td><a href="/profile/<%= user.ign %>" target="_blank" style="text-decoration: none;"><%= user.ign.length <= 33 ? user.ign : user.ign.substring(0, 30)+"..." %></a></td>
-            <td><%= user.level.level %></td>
-            <td><%= Math.round(user.experience) %></td>
-          </tr>
-          <% rankExperience++; %>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="col-0 col-xl-2">
-    </div>
-
-  </div>
-
-</div>
-
-
-<%- include("../partials/footer") -%>
