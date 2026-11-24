@@ -8,17 +8,24 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'Arial', 'sans-serif'],
+        // signed-in app only (see components/app.css)
+        app: ['"Instrument Sans"', 'system-ui', 'sans-serif'],
+        paper: ['"Source Serif 4"', 'Georgia', 'serif'],
       },
       colors: {
-        // one accent for the whole app; subjects get their own hue
-        brand: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-        },
+        // The signed-in app is an answer sheet on a desk, marked in ballpoint,
+        // highlighter and red pen. Values live in CSS variables (app.css) so
+        // light and dark share one set of utilities.
+        desk: 'rgb(var(--desk) / <alpha-value>)',
+        sheet: 'rgb(var(--sheet) / <alpha-value>)',
+        ink: 'rgb(var(--ink) / <alpha-value>)',
+        muted: 'rgb(var(--muted) / <alpha-value>)',
+        rule: 'rgb(var(--rule) / <alpha-value>)',
+        ballpoint: 'rgb(var(--ballpoint) / <alpha-value>)',
+        tint: 'rgb(var(--tint) / <alpha-value>)',
+        marker: 'rgb(var(--marker) / <alpha-value>)',
+        redpen: 'rgb(var(--redpen) / <alpha-value>)',
+        pencil: 'rgb(var(--pencil) / <alpha-value>)',
       },
       textShadow: {
         sm: '0 0px 2px var(--tw-shadow-color)',

@@ -29,7 +29,7 @@ is a contributor, so `/contributors/items` shows item analysis.
 
 **This is not how the live site is updated.** mutorials.org is deployed by the
 Mu Foundation from the upstream repository, so changes in a fork never appear
-there. See [docs/SHIPPING.md](docs/SHIPPING.md).
+there. See [docs/SHIPPING.md](docs/SHIPPING.md). To host your own copy on Vercel, see [docs/HOSTING.md](docs/HOSTING.md).
 
 ## Quick start
 

@@ -16,6 +16,17 @@
 
 ### Added
 
+- **Redesigned signed-in app** ("an answer sheet on a desk"): new type
+  (Instrument Sans for the interface, Source Serif 4 for question text, both
+  self-hosted with a Greek subset for physics), one ruled sheet instead of
+  stacks of cards, highlighter and red-pen marks, scan-sheet answer bubbles, a
+  single rating chart for all subjects, light and dark. The whole practice
+  flow now uses it: unit picker, question, answer review, daily problem and
+  proficiency. Problem Rush still has its old look.
+- **Hosting on Vercel**: `api/index.js`, `vercel.json` and
+  [docs/HOSTING.md](docs/HOSTING.md). The AI library is now an optional
+  dependency so serverless installs skip about 700 MB.
+
 - **New signed-in interface** (Tailwind, light/dark, keyboard and screen-reader
   friendly, no dependency on third-party scripts for navigation): shared app
   shell with an accessible nav, and redesigned home dashboard (rating cards

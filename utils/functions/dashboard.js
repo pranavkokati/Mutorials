@@ -5,28 +5,38 @@ const SUBJECTS = [
   {
     key: 'physics',
     label: 'Physics',
-    color: '#0ea5e9',
+    short: 'Physics',
+    color: '#3558f0',
     href: '/train/Physics/chooseUnits',
   },
   {
     key: 'chemistry',
     label: 'Chemistry',
-    color: '#f59e0b',
+    short: 'Chemistry',
+    color: '#e8731c',
     href: '/train/Chemistry/chooseUnits',
   },
   {
     key: 'biology',
     label: 'Biology',
-    color: '#22c55e',
+    short: 'Biology',
+    color: '#1fa06a',
     href: '/train/Biology/chooseUnits',
   },
   {
     key: 'ess',
     label: 'Earth & Space',
-    color: '#a855f7',
+    short: 'ESS',
+    color: '#9b5de5',
     href: '/train/ESS/chooseUnits',
   },
-  { key: 'usabo', label: 'USABO', color: '#dc2626', href: '/usaboHomepage' },
+  {
+    key: 'usabo',
+    label: 'USABO',
+    short: 'USABO',
+    color: '#d6336c',
+    href: '/usaboHomepage',
+  },
 ];
 
 const SPARK_POINTS = 30;
@@ -92,4 +102,127 @@ function levelProgress(experience) {
   return Math.max(0, Math.min(100, Math.round(pct)));
 }
 
-module.exports = { SUBJECTS, sparkline, ratingCards, levelProgress };
+const STEPS = [10, 20, 25, 50, 100, 200, 250, 500, 1000];
+
+/** Axis bounds on round numbers that contain [min, max], with 3-6 gridlines. */
+function niceDomain(min, max) {
+  const span = Math.max(max - min, 1);
+  const step = STEPS.find((s) => span / s <= 5) || STEPS[STEPS.length - 1];
+  const lo = Math.floor(min / step) * step;
+  let hi = Math.ceil(max / step) * step;
+  if (hi === lo) hi = lo + step;
+  const ticks = [];
+  for (let v = lo; v <= hi + 1e-9; v += step) ticks.push(v);
+  return { lo, hi, step, ticks };
+}
+
+/**
+ * Keep labels at least `gap` apart (all values are percentages of the chart
+ * height) while staying near where they want to be. Returns positions in the
+ * same order as the input.
+ */
+function spreadLabels(positions, gap, lo = 0, hi = 100) {
+  const order = positions
+    .map((pos, index) => ({ pos, index }))
+    .sort((a, b) => a.pos - b.pos);
+  for (let i = 0; i < order.length; i += 1) {
+    const min = i === 0 ? lo : order[i - 1].pos + gap;
+    order[i].pos = Math.max(order[i].pos, min);
+  }
+  for (let i = order.length - 1; i >= 0; i -= 1) {
+    const max = i === order.length - 1 ? hi : order[i + 1].pos - gap;
+    order[i].pos = Math.min(order[i].pos, max);
+  }
+  const out = new Array(positions.length);
+  order.forEach((o) => {
+    out[o.index] = o.pos;
+  });
+  return out;
+}
+
+/**
+ * One shared chart of every subject's rating history, right-aligned so the
+ * latest answer lines up across subjects. Coordinates are percentages, so the
+ * template can draw lines in a stretched SVG and place text as HTML.
+ */
+function ratingChart(user, { points = 40, labelGap = 9 } = {}) {
+  const ratings = (user && user.rating) || {};
+  const tracker = (user && user.stats && user.stats.ratingTracker) || {};
+  const rows = SUBJECTS.map((s) => {
+    const values = (tracker[s.key] || [])
+      .filter((v) => v !== null && v !== undefined && v !== '')
+      .map(Number)
+      .filter((n) => Number.isFinite(n))
+      .slice(-points);
+    const rating = Number(ratings[s.key]);
+    return {
+      ...s,
+      values,
+      rated: Number.isFinite(rating) && rating > 0,
+      rating,
+    };
+  }).filter((r) => r.rated);
+
+  const plotted = rows.filter((r) => r.values.length >= 2);
+  const unplotted = rows
+    .filter((r) => r.values.length < 2)
+    .map((r) => ({ key: r.key, label: r.label, rating: Math.round(r.rating) }));
+  if (plotted.length === 0) {
+    return { empty: true, series: [], ticks: [], unplotted };
+  }
+
+  const all = plotted.flatMap((r) => r.values);
+  const domain = niceDomain(Math.min(...all), Math.max(...all));
+  const longest = Math.max(...plotted.map((r) => r.values.length));
+  const y = (v) =>
+    Math.round((1 - (v - domain.lo) / (domain.hi - domain.lo)) * 1000) / 10;
+
+  const series = plotted.map((r) => {
+    const offset = longest - r.values.length;
+    const coords = r.values.map((v, i) => [
+      Math.round(((offset + i) / (longest - 1)) * 1000) / 10,
+      y(v),
+    ]);
+    const last = r.values[r.values.length - 1];
+    return {
+      key: r.key,
+      label: r.label,
+      short: r.short,
+      color: r.color,
+      href: r.href,
+      points: coords.map((c) => c.join(',')).join(' '),
+      rating: Math.round(last),
+      change: Math.round(last - r.values[0]),
+      samples: r.values.length,
+      endX: coords[coords.length - 1][0],
+      endY: coords[coords.length - 1][1],
+    };
+  });
+  const placed = spreadLabels(
+    series.map((s) => s.endY),
+    labelGap,
+    2,
+    98,
+  );
+  series.forEach((s, i) => {
+    s.labelY = placed[i];
+  });
+
+  return {
+    empty: false,
+    series,
+    unplotted,
+    ticks: domain.ticks.map((value) => ({ value, y: y(value) })),
+    answers: longest,
+  };
+}
+
+module.exports = {
+  SUBJECTS,
+  sparkline,
+  ratingCards,
+  levelProgress,
+  niceDomain,
+  spreadLabels,
+  ratingChart,
+};

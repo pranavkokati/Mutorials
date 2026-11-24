@@ -1,14 +1,15 @@
-/* Let's make tables look nice */
+/* Let's make tables look nice. Tables with class "plain" (the signed-in app)
+   set their own spacing and type. */
 
-table td,
-table th {
+table:not(.plain) td,
+table:not(.plain) th {
   @apply px-6 py-4;
 }
 
-table thead {
+table:not(.plain) thead {
   @apply uppercase font-bold border-b text-left;
 }
 
-table tbody {
+table:not(.plain) tbody {
   @apply divide-y;
 }

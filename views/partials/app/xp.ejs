@@ -1,0 +1,12 @@
+<%# Level and progress to the next level. ARGUMENTS: experienceStats (calculateLevel output) %>
+<%
+  const xp = experienceStats;
+  const pct = Math.max(0, Math.min(100, Math.round((100 * xp.remainder) / xp.totalToNext)));
+%>
+<div class="flex items-center gap-3 text-sm text-muted" title="<%= xp.remainder %> of <%= xp.totalToNext %> XP to level <%= xp.level + 1 %>">
+  <span class="font-semibold text-ink">Level <%= xp.level %></span>
+  <span class="h-1.5 w-28 overflow-hidden rounded-full bg-rule" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= pct %>" aria-label="Progress to level <%= xp.level + 1 %>">
+    <span class="block h-full rounded-full bg-ballpoint" style="width: <%= pct %>%"></span>
+  </span>
+  <span><%= xp.remainder %>/<%= xp.totalToNext %> XP</span>
+</div>

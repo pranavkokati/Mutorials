@@ -1,37 +1,43 @@
 <%# Training hub, rendered inside layouts/app.ejs %>
-
+<%
+  const modes = [
+    { name: 'Classic training', href: '/train/chooseSubject', action: 'Choose a subject',
+      text: 'Questions matched to your rating in Physics, Chemistry, Biology or Earth & Space Science. You pick the units, and every answer updates your rating.' },
+    { name: 'Problem Rush', href: '/train/rush', action: 'Start a rush',
+      text: 'A run of questions that get harder as you go. Your score is how far you get.' },
+    { name: 'Daily problem', href: '/train/daily', action: 'Open today\'s problem',
+      text: 'One hard problem, the same for everyone, refreshed at 00:00 UTC.' },
+  ];
+%>
 <h1 class="page-title">Train</h1>
-<p class="page-lead">Three ways to practise. Classic and Rush update your rating; spaced review never does.</p>
+<p class="page-lead">Pick how you want to practise.</p>
 
-<div class="mt-8 grid gap-4 md:grid-cols-3">
-  <a class="card-link card-pad" href="/train/chooseSubject">
-    <span class="badge badge-info">Rated</span>
-    <h2 class="mt-3 text-xl font-bold">Classic training</h2>
-    <p class="mt-1 text-sm muted">Adaptive questions matched to your rating in Physics, Chemistry, Biology or Earth &amp; Space Science. Choose the units you want.</p>
-    <span class="btn btn-primary mt-4 w-fit">Start training</span>
-  </a>
-  <a class="card-link card-pad" href="/train/rush">
-    <span class="badge badge-warn">Timed</span>
-    <h2 class="mt-3 text-xl font-bold">Problem Rush</h2>
-    <p class="mt-1 text-sm muted">A fast, increasingly difficult run of questions. Chase your high score.</p>
-    <span class="btn btn-primary mt-4 w-fit">Start Rush</span>
-  </a>
-  <a class="card-link card-pad" href="/train/daily">
-    <span class="badge">Daily</span>
-    <h2 class="mt-3 text-xl font-bold">Daily question</h2>
-    <p class="mt-1 text-sm muted">One new challenge problem every day, refreshed at 00:00 UTC.</p>
-    <span class="btn btn-primary mt-4 w-fit">See today's challenge</span>
-  </a>
-</div>
+<ul class="rows mt-10">
+  <% modes.forEach((m) => { %>
+  <li>
+    <a class="row-link grid gap-1 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-8" href="<%= m.href %>">
+      <span>
+        <span class="block text-xl font-semibold tracking-tight"><%= m.name %></span>
+        <span class="mt-1 block max-w-prose text-muted"><%= m.text %></span>
+      </span>
+      <span class="link mt-2 sm:mt-0"><%= m.action %></span>
+    </a>
+  </li>
+  <% }) %>
+</ul>
 
-<h2 class="mt-10 text-xl font-bold">Practise smarter</h2>
-<div class="mt-3 grid gap-4 md:grid-cols-2">
-  <a class="card-link card-pad" href="/coach">
-    <h3 class="font-bold">Study coach</h3>
-    <p class="mt-1 text-sm muted">See which units you under- or over-perform in relative to your own rating, and get a suggested next unit.</p>
-  </a>
-  <a class="card-link card-pad" href="/review">
-    <h3 class="font-bold">Spaced review</h3>
-    <p class="mt-1 text-sm muted">Revisit questions you missed on an increasing schedule until you get them right.</p>
-  </a>
-</div>
+<h2 class="section-title mt-14">Study smarter</h2>
+<ul class="rows mt-4">
+  <li>
+    <a class="row-link" href="/coach">
+      <span class="block font-semibold">Study coach</span>
+      <span class="block max-w-prose text-muted">See which units you under- or over-perform in compared with your own rating, and get a suggested next unit.</span>
+    </a>
+  </li>
+  <li>
+    <a class="row-link" href="/review">
+      <span class="block font-semibold">Spaced review</span>
+      <span class="block max-w-prose text-muted">Questions you missed return on a schedule until you answer them correctly five times in a row. Review never changes your rating.</span>
+    </a>
+  </li>
+</ul>

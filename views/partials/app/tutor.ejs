@@ -1,0 +1,125 @@
+<%# Self-hosted AI study helper, app design. See docs/AI.md. Hidden unless the server has AI enabled. %>
+<%# ARGUMENTS: aiQuestionId (string), aiPhase ('before' = hints, 'after' = explanations), aiUserAnswer (answer submitted, 'after' only), aiCorrect (boolean, 'after' only) %>
+<section id="ai-tutor" class="rule-top mt-10 hidden" aria-labelledby="ai-tutor-title">
+  <h2 id="ai-tutor-title" class="section-title">Study helper</h2>
+  <p class="mt-1 max-w-prose text-sm text-muted">Runs on this site's own server with an open-source model. It can be wrong, so compare it with the author's explanation.</p>
+  <div class="mt-4 flex flex-wrap gap-2" id="ai-buttons"></div>
+  <div id="ai-output" class="mt-4 max-w-prose" aria-live="polite"></div>
+  <div id="ai-related" class="mt-6 hidden">
+    <h3 class="text-sm font-semibold">Similar questions to practise</h3>
+    <ul class="rows mt-2" id="ai-related-list"></ul>
+  </div>
+</section>
+
+<script>
+  (function () {
+    var cfg = {
+      id: <%- JSON.stringify(String(aiQuestionId)) %>,
+      phase: <%- JSON.stringify(aiPhase) %>,
+      answer: <%- JSON.stringify(typeof aiUserAnswer === 'undefined' ? [] : [].concat(aiUserAnswer)) %>,
+      correct: <%- JSON.stringify(typeof aiCorrect === 'undefined' ? null : !!aiCorrect) %>
+    };
+    var root = document.getElementById('ai-tutor');
+    var buttons = document.getElementById('ai-buttons');
+    var output = document.getElementById('ai-output');
+    var busy = false;
+
+    function addButton(label, mode) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn btn-outline';
+      b.textContent = label;
+      b.addEventListener('click', function () { ask(mode, b); });
+      buttons.appendChild(b);
+    }
+
+    function show(text, note, isError) {
+      output.textContent = '';
+      var p = document.createElement('p');
+      p.className = 'paper-sm' + (isError ? ' pen-weak' : '');
+      p.textContent = text; // textContent: model output is never interpreted as HTML
+      output.appendChild(p);
+      if (note) {
+        var s = document.createElement('p');
+        s.className = 'mt-2 text-sm text-muted';
+        s.textContent = note;
+        output.appendChild(s);
+      }
+    }
+
+    function ask(mode, button) {
+      if (busy) return;
+      busy = true;
+      button.disabled = true;
+      show('Working on it. The first request for a question can take up to a minute; later ones are instant.');
+      var body = new URLSearchParams({ id: cfg.id, mode: mode });
+      cfg.answer.forEach(function (a) { body.append('answer', a); });
+      fetch('/ai/tutor', { method: 'POST', body: body, credentials: 'same-origin' })
+        .then(function (res) {
+          if (!res.ok) {
+            return res.json().then(function (j) { throw new Error(j.error || 'Request failed'); });
+          }
+          return res.text();
+        })
+        .then(function (text) {
+          var result = null;
+          text.trim().split('\n').forEach(function (line) {
+            try { var e = JSON.parse(line); if (e.type === 'result') result = e; } catch (_) {}
+          });
+          if (!result) throw new Error('No answer was returned.');
+          var note = result.source === 'model' || result.source === 'cache'
+            ? 'Written by an AI model. Check it against the explanation above.'
+            : 'The model could not give a reliable answer, so this is the standard text.';
+          show(result.text, note);
+        })
+        .catch(function (err) { show(err.message || 'Something went wrong. Try again.', null, true); })
+        .then(function () { busy = false; button.disabled = false; });
+    }
+
+    function loadRelated() {
+      fetch('/ai/related/' + encodeURIComponent(cfg.id), { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j.related || j.related.length === 0) return;
+          var list = document.getElementById('ai-related-list');
+          j.related.forEach(function (item) {
+            var li = document.createElement('li');
+            var a = document.createElement('a');
+            a.href = '/question/' + encodeURIComponent(item.id);
+            a.className = 'row-link';
+            var t = document.createElement('span');
+            t.className = 'block';
+            t.textContent = item.snippet;
+            a.appendChild(t);
+            if (item.unit) {
+              var m = document.createElement('span');
+              m.className = 'block text-sm text-muted';
+              m.textContent = item.unit + ', rated ' + item.rating;
+              a.appendChild(m);
+            }
+            li.appendChild(a);
+            list.appendChild(li);
+          });
+          document.getElementById('ai-related').classList.remove('hidden');
+          root.classList.remove('hidden');
+        })
+        .catch(function () {});
+    }
+
+    fetch('/ai/status', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (s) {
+        if (s.llm) {
+          if (cfg.phase === 'before') {
+            addButton('Give me a hint', 'hint');
+          } else {
+            addButton('Explain it simply', 'simplify');
+            if (cfg.correct === false) addButton('Why was I wrong?', 'why-wrong');
+          }
+          root.classList.remove('hidden');
+        }
+        if (s.embeddings && cfg.phase === 'after') loadRelated();
+      })
+      .catch(function () {});
+  })();
+</script>

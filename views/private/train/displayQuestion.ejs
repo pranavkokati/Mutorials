@@ -1,284 +1,123 @@
-<%# Page to display questions on for classic training %>
-<%# ARGUMENTS: newQues - question object, units - units user selected, user - the user object, subject - the subject %>
+<%# Classic training question, rendered inside layouts/app.ejs %>
+<%# ARGUMENTS: newQues, units, user, subject, experienceStats, referenceSheet, winChance, disabled (view-only) %>
+<%
+  const viewOnly = typeof disabled !== 'undefined' && disabled;
+  const usable = newQues && newQues.question !== '' && newQues.rating != null && newQues.answer && newQues.answer[0] !== '';
+  const unitQuery = Array.isArray(units) ? units.join(',') : units;
+  const back = '/train/' + subject + '/displayQuestion?units=' + unitQuery;
+  const letter = (i) => String.fromCharCode(64 + i);
+  const userRating = user.rating[subject.toLowerCase()];
+%>
 
-<%- include("../../partials/header") -%>
-<%- include("../../partials/navigationPrivate") -%>
-
-<%# JS code %>
-<script>
-  $(document).ready(function() {
-    // obtain hidden tag info [NOT IN USE RIGHT NOW]
-    var type = $('#hiddentypetag').val();
-
-    // hide skip dialogue code
-    $('#skip-dialogue-1').show();
-    $('#skip-dialogue-2').hide(0);
-
-    // skip button confirm message
-    $('#skip-button').click(function() {
-      $('#skip-dialogue-2').show(1000);
-      $('#skip-dialogue-1').hide(1000);
-    });
-    $('#no-skip').click(function() {
-      $('#skip-dialogue-1').show(1000);
-      $('#skip-dialogue-2').hide(1000);
-    });
-
-    // render rating display
-    var ctxRating = document.getElementById('ratingChart');
-
-    var style = ctxRating.style;
-    style.marginLeft = 'auto';
-    style.marginRight = 'auto';
-
-    var myChart = new Chart(ctxRating, {
-      type: 'pie',
-      data: {
-        labels: ['User', 'Question'],
-        datasets: [{
-          label: 'Current Rating',
-          data: [$('#userRating').val(), $('#questionRating').val()],
-          backgroundColor: [
-            'rgba(80, 185, 20, 0.7)',
-            'rgba(85, 190, 230, 0.7)',
-          ],
-          hoverBackgroundColor: [
-            'rgba(80, 185, 20, 1)',
-            'rgba(85, 190, 230, 1)',
-          ],
-          borderColor: [
-            'rgba(255, 255, 255, 0.5)',
-            'rgba(255, 255, 255, 0.5)',
-          ],
-          borderWidth: 2,
-        }, ],
-      },
-      options: {
-        title: {
-          display: true,
-          text: 'Current Ratings',
-        },
-        legend: {
-          display: false,
-        },
-        cutoutPercentage: 40,
-        responsive: true,
-      },
-    });
-
-    // decheck all
-    $('.form-check-input').prop('checked', false);
-  });
-</script>
-
-<div class="container mt-5">
-  <%- include("../../partials/components/experienceBar") -%>
+<div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+  <p class="text-sm text-muted"><a class="link" href="/train">Train</a> / <%= subject %></p>
+  <%- include('../../partials/app/xp.ejs', { experienceStats }) %>
 </div>
 
-<div class="jumbotron container mt-3">
-  <%- include("../../partials/flashes") -%>
+<% if (!usable) { %>
+  <h1 class="page-title mt-8">This question can't be shown</h1>
+  <p class="page-lead">Something is wrong with its text or answer key<% if (newQues) { %>. Please tell an admin that question <span class="font-mono"><%= newQues._id %></span> is broken<% } %>.</p>
+  <a href="/train/<%= subject %>/chooseUnits" class="btn btn-primary mt-6">Choose different units</a>
+<% } else { %>
 
-  <% try { %>
-  <%# Test for faulty question %>
-  <% if (!newQues) { %>
-  <% throw "no questions found"; %>
-  <% } %>
-  <% if((newQues.question == "") || (newQues.rating == null) || (newQues.answer[0] == "") || (newQues.answerEx == "")) { %>
-  <% throw "bad question parameters"; %>
+  <% if (newQues.units && newQues.units.length) { %>
+  <p class="mt-8 text-sm text-muted"><%= newQues.units.join(', ') %></p>
   <% } %>
 
-  <div class="row">
-    <div class="col-12 col-lg-9">
-      <p class="lead mb-3">
-        <% if(newQues.ext_source != "original") { %>
-      <p>Question Source: <%= newQues.ext_source %></p>
-      <p><%= newQues.source_statement %></p>
-      <% } %>
-      </p>
+  <% if (newQues.ext_source != 'original') { %>
+  <p class="mt-1 text-sm text-muted">Source: <%= newQues.ext_source %><% if (newQues.source_statement) { %>. <%= newQues.source_statement %><% } %></p>
+  <% } %>
 
-      <%# Display question %>
-      <% if(newQues.type == "mc") { %>
-      <%# Multiple choice %>
+  <form action="/train/checkAnswer" method="POST" class="mt-4">
+    <h1 class="sr-only">Question</h1>
+    <div class="paper max-w-3xl"><%- newQues.question %></div>
 
-      <% if(!(typeof disabled != 'undefined' && disabled)) { %>
-      <h3 class="display-4" style="font-size: 1.5rem;">Please read the following question and select the best answer:</h3>
-      <% } %>
-      <p><%- newQues.question %></p>
-      <form action="/train/checkAnswer" method="POST">
-        <div class="mt-4" id="mc-choices">
-          <% var choiceIndex = 1; %>
-          <% newQues.choices.forEach((choice) => { %>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="answerChoice" id="<%= choiceIndex %>" value="<%= choiceIndex %>">
-            <label class="form-check-label" for="<%= choiceIndex %>"><%= String.fromCharCode(64+choiceIndex) %>. <%= choice %></label>
-          </div>
-          <% choiceIndex++; %>
-          <% }) %>
-          <% if(!(typeof disabled != 'undefined' && disabled)) { %>
-          <input class="btn btn-primary mt-4 mb-3" type="submit" value="Submit" id="submit">
+    <p class="mt-8 text-sm font-medium text-muted" id="answer-hint">
+      <% if (newQues.type === 'sa') { %>Select every answer that applies.
+      <% } else if (newQues.type === 'fr') { %>Type your answer.
+      <% } else { %>Choose one answer.<% } %>
+    </p>
+
+    <% if (newQues.type === 'mc' || newQues.type === 'sa') { %>
+      <% const multi = newQues.type === 'sa'; %>
+      <div class="mt-2 grid max-w-3xl gap-2" role="<%= multi ? 'group' : 'radiogroup' %>" aria-describedby="answer-hint">
+        <% newQues.choices.forEach((choice, idx) => { const n = idx + 1; %>
+          <% if (viewOnly) { %>
+          <div class="choice-static"><span class="bubble"><%= letter(n) %></span><span class="paper-sm"><%= choice %></span></div>
+          <% } else { %>
+          <label class="choice">
+            <input type="<%= multi ? 'checkbox' : 'radio' %>" name="<%= multi ? 'saChoice' : 'answerChoice' %>" value="<%= n %>" <%= !multi && idx === 0 ? 'required' : '' %>>
+            <span class="bubble"><%= letter(n) %></span>
+            <span class="paper-sm"><%= choice %></span>
+          </label>
           <% } %>
-        </div>
-        <input type="hidden" name="id" value="<%= newQues._id %>">
-        <input type="hidden" name="type" value="<%= newQues.type %>" id="hiddentypetag">
-        <input type="hidden" name="subject" value="<%= subject %>">
-        <input type="hidden" name="units" value="<%= units %>">
-        <input type="hidden" name="redirect" value="/train/<%= subject %>/displayQuestion?units=<%=units%>">
-      </form>
-
-      <% } else if(newQues.type == "sa") { %>
-      <%# Select all %>
-
-      <% if(!(typeof disabled != 'undefined' && disabled)) { %>
-      <h3 class="display-4" style="font-size: 1.5rem;">Please read the following question and select the best answer:</h3>
-      <% } %>
-      <p><%- newQues.question %></p>
-      <form action="/train/checkAnswer" method="POST">
-        <div class="mt-4" id="sa-choices">
-          <% var choiceIndex = 1; %>
-          <% newQues.choices.forEach((choice) => { %>
-          <div class="form-check my-1 me-sm-2">
-            <input type="checkbox" name="saChoice" class="form-check-input" id="<%= choiceIndex %>" value="<%= choiceIndex %>">
-            <label class="form-check-label" for="<%= choiceIndex %>"><%= String.fromCharCode(64+choiceIndex) %>. <%= choice %></label>
-          </div>
-          <% choiceIndex++; %>
-          <% }) %>
-          <% if(!(typeof disabled != 'undefined' && disabled)) { %>
-          <input class="btn btn-primary mt-4 mb-3" type="submit" value="Submit" id="submit">
-          <% } %>
-        </div>
-        <input type="hidden" name="id" value="<%= newQues._id %>">
-        <input type="hidden" name="type" value="<%= newQues.type %>" id="hiddentypetag">
-        <input type="hidden" name="subject" value="<%= subject %>">
-        <input type="hidden" name="units" value="<%= units %>">
-        <input type="hidden" name="redirect" value="/train/<%= subject %>/displayQuestion?units=<%=units%>">
-      </form>
-
-      <% } else if(newQues.type == "fr") { %>
-      <%# Free response %>
-
-      <% if(!(typeof disabled != 'undefined' && disabled)) { %>
-      <h3 class="display-4" style="font-size: 1.5rem;">Please read the following question and select the best answer:</h3>
-      <% } %>
-      <p><%- newQues.question %></p>
-      <form action="/train/checkAnswer" method="POST">
-        <div class="mt-4">
-          <% if(!(typeof disabled != 'undefined' && disabled)) { %>
-          <div class="form-group">
-            <input type="text" class="form-control" id="fr-answer" placeholder="Enter your answer here" name="freeAnswer" value="">
-          </div>
-          <input class="btn btn-primary mb-3" type="submit" value="Submit" id="submit">
-          <% } %>
-        </div>
-        <input type="hidden" name="id" value="<%= newQues._id %>">
-        <input type="hidden" name="type" value="<%= newQues.type %>" id="hiddentypetag">
-        <input type="hidden" name="subject" value="<%= subject %>">
-        <input type="hidden" name="units" value="<%= units %>">
-        <input type="hidden" name="redirect" value="/train/<%= subject %>/displayQuestion?units=<%=units%>">
-      </form>
-
-      <% } else { %>
-      <% throw "invalid type"; %>
-      <% } %>
-    </div>
-
-    <div class="col-12 col-lg-3">
-      <div class="canvas-container-center text-center">
-        <canvas id="ratingChart" width="400" height="400"></canvas>
+        <% }) %>
       </div>
-      <input type="hidden" id="userRating" value="<%= user.rating[subject.toLowerCase()] %>">
-      <input type="hidden" id="questionRating" value="<%= newQues.rating %>">
-    </div>
-  </div>
-
-  <style>
-    summary>* {
-      display: inline;
-    }
-  </style>
-
-  <details>
-    <summary class="mb-3">
-      <h3 class="mb-6">Equations</h3>
-    </summary>
-    <% Object.keys(referenceSheet).forEach((subject) => { %>
-    <% if (newQues.subject.includes(subject)) { %>
-    <% Object.keys(referenceSheet[subject].Equations).forEach((equation) => { %>
-    <div class="my-2 row">
-      <div class="col-12 col-lg-6">
-        <h5><%= equation %></h5>
-      </div>
-      <div class="col-12 col-lg-6">
-        <p><%= referenceSheet[subject].Equations[equation] %></p>
-      </div>
-    </div>
-    <% }); %>
+    <% } else if (newQues.type === 'fr') { %>
+      <% if (!viewOnly) { %>
+      <label class="sr-only" for="fr-answer">Your answer</label>
+      <input type="text" class="mt-2 w-full max-w-md" id="fr-answer" name="freeAnswer" autocomplete="off" required placeholder="Your answer">
+      <% } %>
+    <% } else { %>
+      <p class="pen-weak mt-4">This question has an unknown type and can't be answered.</p>
     <% } %>
-    <% }); %>
-  </details>
 
-  <details class="mb-3">
-    <summary>
-      <h3 class="mb-6">Constants</h3>
-    </summary>
-    <% Object.keys(referenceSheet).forEach((subject) => { %>
-    <% if (newQues.subject.includes(subject)) { %>
-    <% Object.keys(referenceSheet[subject].Constants).forEach((constant) => { %>
-    <div class="my-2 row">
-      <div class="col-12 col-lg-6">
-        <h5><%= constant %></h5>
-      </div>
-      <div class="col-12 col-lg-6">
-        <p><%= referenceSheet[subject].Constants[constant] %></p>
-      </div>
+    <input type="hidden" name="id" value="<%= newQues._id %>">
+    <input type="hidden" name="type" value="<%= newQues.type %>" id="hiddentypetag">
+    <input type="hidden" name="subject" value="<%= subject %>">
+    <input type="hidden" name="units" value="<%= unitQuery %>">
+    <input type="hidden" name="redirect" value="<%= back %>">
+
+    <% if (!viewOnly) { %>
+    <div class="mt-6 flex flex-wrap items-center gap-4">
+      <button class="btn btn-primary" type="submit" id="submit">Submit answer</button>
+      <% if (winChance !== null && winChance !== undefined) { %>
+      <p class="text-sm text-muted">Rated <%= newQues.rating %>. At your rating of <%= userRating %> you should get this right about <span class="font-semibold text-ink"><%= winChance %>%</span> of the time.</p>
+      <% } %>
     </div>
-    <% }); %>
     <% } %>
-    <% }); %>
-  </details>
+  </form>
 
-  <%# Skip question %>
-
-  <% if(!(typeof disabled != 'undefined' && disabled)) { %>
-  <%- include("../../partials/aiTutor", { aiQuestionId: newQues._id, aiPhase: 'before' }) %>
+  <% if (!viewOnly) { %>
+    <%- include('../../partials/app/tutor.ejs', { aiQuestionId: newQues._id, aiPhase: 'before' }) %>
   <% } %>
 
-  <% if(!(typeof disabled != 'undefined' && disabled)) { %>
-  <div class="mt-2">
-    <div id="skip-dialogue-1">
-      <h3 class="display-4" style="font-size: 1.5rem;">Question's content out of reach of your knowledge?</h3>
-      <button type="button" class="btn btn-primary mt-2" id="skip-button">Skip Question</button>
-    </div>
+  <% const sheets = Object.keys(referenceSheet).filter((s) => newQues.subject.includes(s)); %>
+  <% if (sheets.length) { %>
+  <section class="rule-top mt-10" aria-labelledby="ref-title">
+    <h2 id="ref-title" class="section-title">Reference sheet</h2>
+    <% ['Equations', 'Constants'].forEach((kind) => { %>
+    <details class="ref border-b border-rule">
+      <summary><%= kind %></summary>
+      <dl class="grid gap-x-8 gap-y-3 pb-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <% sheets.forEach((s) => { Object.keys(referenceSheet[s][kind]).forEach((name) => { %>
+        <dt class="font-medium"><%= name %></dt>
+        <dd class="text-muted"><%= referenceSheet[s][kind][name] %></dd>
+        <% }); }); %>
+      </dl>
+    </details>
+    <% }) %>
+  </section>
+  <% } %>
 
-    <div id="skip-dialogue-2">
-      <h3 class="display-4" style="font-size: 1.5rem;">Are you sure you want to skip this question?</h3>
-      <p>A new question will be randomly chosen, but you will lose 8 rating for skipping</p>
-      <form action="/train/skipQuestion" method="POST">
-        <button type="button" class="btn btn-secondary" id="no-skip">No</button>
-        <button type="submit" class="btn btn-primary" id="yes-skip">Yes</button>
+  <% if (!viewOnly) { %>
+  <section class="rule-top mt-10" aria-labelledby="skip-title">
+    <h2 id="skip-title" class="section-title">Can't do this one yet?</h2>
+    <details class="mt-2 max-w-prose">
+      <summary class="btn-quiet -ml-3 cursor-pointer list-none">Skip this question</summary>
+      <form action="/train/skipQuestion" method="POST" class="mt-3">
+        <p class="text-muted">You get a different question, and your rating drops by 8.</p>
         <input type="hidden" name="id" value="<%= newQues._id %>">
-        <input type="hidden" name="redirect" value="/train/<%= subject %>/displayQuestion?units=<%=units%>">
+        <input type="hidden" name="redirect" value="<%= back %>">
         <input type="hidden" name="subject" value="<%= subject %>">
+        <button type="submit" class="btn btn-outline mt-3" id="yes-skip">Skip and lose 8 rating</button>
       </form>
-    </div>
+    </details>
+  </section>
+  <% } %>
+
+  <div class="mt-10 flex flex-wrap items-center justify-between gap-3">
+    <a class="link" href="/train/<%= subject %>/chooseUnits">Change units</a>
+    <%- include('../../partials/app/contact.ejs', { questionId: newQues._id, redirect: back }) %>
   </div>
-  <% } %>
-
-  <% } catch(err) { %>
-  <!-- ERROR CODE -->
-  <% if (err == "bad question parameters") { %>
-  <h3>Someone messed up their equations! Perhaps they said $\sin^2(\theta)+\cos^2(\theta) \neq 1$ ?</h3>
-  <p>Sorry, we could not display your question. Please reenter the trainer and inform an admin that the question with ID <font color="red"><%= newQues._id %></font> is dysfunctional.</p>
-  <% } else { %>
-  <h3>We're sorry, we weren't able to find any problems in this unit.</h3>
-  <p>We're adding new problems constantly... Check back soon!</p>
-
-  <a href="/train" class="btn btn-primary w-100 btn-lg mt-4">Click me to go back</a>
-  <% } %>
-  <% } %>
-</div>
-
-<% if(newQues.source_statement) { %>
-<p class="text-center mb-5"><%= newQues.source_statement %></p>
 <% } %>
-
-<%- include("../../partials/footer") -%>
