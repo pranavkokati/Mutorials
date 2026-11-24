@@ -1,5 +1,5 @@
 <%# Search page for users %>
-<%# ARGUMENTS: results - the results of the search, query - the last search %>
+<%# ARGUMENTS: results - keyword results, semantic - meaning-based question results, query - the last search, hasQuery - whether text was searched %>
 
 <%- include("../partials/header") -%>
 <%- include("../partials/navigationPrivate") -%>
@@ -25,11 +25,24 @@
             </a>
         <% }); %>
 
-    <% } else if (query != "") { %>
+    <% } else if (hasQuery && !(semantic && semantic.length > 0)) { %>
         <div class="my-2 alert alert-danger">
             <p class="mb-1">No results found for your query:</p>
-            <pre class="mb-0"><code><%= JSON.stringify(query, null, 2) %></code></pre>
+            <pre class="mb-0"><code><%= JSON.stringify(query.text) %></code></pre>
         </div>
+    <% } %>
+
+    <% if (semantic && semantic.length > 0) { %>
+        <h3 class="mb-0 mt-4">Related by meaning</h3>
+        <p class="text-muted small mb-1">Questions that are close in meaning to your search even if they use different words. Ranked by an on-server language model; results are suggestions and may include loosely related questions.</p>
+        <% semantic.forEach((result) => { %>
+            <a href="/train/displayQuestion/<%= result.id %>" target="_blank" style="text-decoration: none;">
+                <div class="d-block px-4 py-3 my-2 search-result bg-main">
+                    <h4><span class="badge bg-info">MEANING</span> <%= result.title %></h4>
+                    <p class="mb-0"><%= result.preview %></p>
+                </div>
+            </a>
+        <% }); %>
     <% } %>
     
 </div>

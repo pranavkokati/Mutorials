@@ -6,6 +6,7 @@ Mutorials includes optional AI features that run **on the site's own server** wi
 | ------------------------------------------------------------- | ------------------------------------------- | -------------------- | --------------------- |
 | Related questions after answering                             | `Xenova/all-MiniLM-L6-v2` (q8, about 23 MB) | on                   | `GET /ai/related/:id` |
 | Duplicate check for question authors (live and pending banks) | same                                        | on                   | `POST /ai/duplicates` |
+| "Related by meaning" section on the search page               | same                                        | on                   | `GET /search`         |
 | Hint before answering                                         | `onnx-community/Qwen2.5-1.5B-Instruct` (q4) | **off** (`AI_LLM=1`) | `POST /ai/tutor`      |
 | "Explain it simply" and "Why was I wrong?" after answering    | same                                        | **off**              | `POST /ai/tutor`      |
 
@@ -58,6 +59,19 @@ What this means:
 
 To trade quality for speed on small hosts set `AI_LLM_MODEL=onnx-community/Qwen2.5-0.5B-Instruct`. Re-run `scripts/ai-eval.js` after changing models or guards.
 
+## Semantic search
+
+`GET /search` still runs the keyword search first. When AI is enabled, the query (4 to 200 characters, not a 24-character id) is also embedded and compared with the question index, and up to 8 further questions are listed under "Related by meaning". Keyword hits are never repeated, subject, unit and tag filters apply, and any failure (model unavailable, over the limit of 20 semantic searches per user per minute) silently leaves the keyword results as they were. Query text is embedded in memory and not stored.
+
+Pilot retrieval check (`node scripts/search-eval.js`): 10 hand-written paraphrases, each describing one question in the 10-question evaluation set without reusing its wording.
+
+| Method                                 | Top-1 | Top-3 | MRR  |
+| -------------------------------------- | ----- | ----- | ---- |
+| `Xenova/all-MiniLM-L6-v2` (production) | 10/10 | 10/10 | 1.00 |
+| TF-IDF cosine baseline (same text)     | 8/10  | 10/10 | 0.87 |
+
+Cosine similarity to the correct question averaged 0.54 (minimum 0.42) against 0.10 for the other questions (maximum 0.48). At the 0.3 display cutoff an average of 0.6 incorrect questions per query passed. Caveats: ten queries over a ten-question bank is a smoke test, not evidence of performance on a bank of thousands; the paraphrases were written by the same people who wrote the questions; the 0.3 cutoff is a heuristic that has not been tuned, and ranking, not the cutoff, does most of the work. The result says the pipeline works and that embeddings help where wording differs, with confidence moderate; it does not quantify the gain on real searches.
+
 ## Operations
 
 - **Memory:** the 1.5B q4 model is expected to need on the order of 1 to 2 GB of RAM while loaded and the embedder a few hundred MB (not precisely measured yet; check on your host). Shared hosting plans may not allow this; the embedding features alone are lightweight.
@@ -67,7 +81,5 @@ To trade quality for speed on small hosts set `AI_LLM_MODEL=onnx-community/Qwen2
 
 ## Ideas not built yet
 
-- A study-coach view that turns the new `attempts` log into per-unit weak-spot recommendations.
-- Semantic search over the whole bank (the index already supports it).
 - Pre-generation of explanations for the whole bank as an off-peak batch job.
 - Human evaluation of explanation quality with a larger question set.

@@ -642,3 +642,95 @@ test('author pages include the duplicate check', async () => {
   assert.equal(page.status, 200);
   assert.match(page.text, /ai-dup-button/);
 });
+
+// ------------------------------------------------------------ semantic search
+
+test('semantic search finds questions by meaning when keyword search finds nothing', async () => {
+  const backend = makeFakeBackend('unused');
+  setBackend(backend);
+  const incline = await ctx.mongo.Ques.create(baseQuestion());
+  await ctx.mongo.Ques.create(
+    baseQuestion({
+      question: 'Which organelle produces most of the cell ATP?',
+      subject: ['Biology'],
+      units: ['Biology - Cell'],
+      answer_ex: 'Mitochondria.',
+    }),
+  );
+  const { agent } = await newUser();
+  // not a substring of any question, so the keyword search is empty
+  const res = await agent
+    .get('/search')
+    .query({ text: 'block incline acceleration slides frictionless' });
+  assert.equal(res.status, 200);
+  assert.match(res.text, /Related by meaning/);
+  assert.match(res.text, new RegExp('/train/displayQuestion/' + incline._id));
+  assert.doesNotMatch(res.text, /mitochondria/i);
+  assert.doesNotMatch(res.text, /No results found/);
+});
+
+test('semantic search does not repeat keyword hits and honours subject filters', async () => {
+  setBackend(makeFakeBackend('unused'));
+  const physics = await ctx.mongo.Ques.create(baseQuestion());
+  await ctx.mongo.Ques.create(
+    baseQuestion({
+      question:
+        '<p>A block slides down a frictionless incline with acceleration found by resolving forces.</p>',
+      subject: ['Chemistry'],
+      units: ['Chemistry - Atomic Structure'],
+    }),
+  );
+  const { agent } = await newUser();
+  // "frictionless" is a keyword hit for the physics question
+  const keyword = await agent
+    .get('/search')
+    .query({ text: 'slides down a frictionless' });
+  const link = '/train/displayQuestion/' + physics._id;
+  const shown = keyword.text.split(link).length - 1;
+  assert.equal(shown, 1, 'a keyword hit is listed once, not again as semantic');
+
+  const filtered = await agent.get('/search').query({
+    text: 'block slides incline acceleration forces',
+    subjects: 'Physics',
+  });
+  assert.doesNotMatch(filtered.text, /Chemistry \(/);
+});
+
+test('semantic search stays out of the way: short text, id-like text, AI off, model failure, rate limit', async () => {
+  const backend = makeFakeBackend('unused');
+  setBackend(backend);
+  const q = await ctx.mongo.Ques.create(baseQuestion());
+  const { agent } = await newUser();
+
+  await agent.get('/search').query({ text: 'ab' });
+  await agent.get('/search').query({ text: String(q._id) });
+  assert.equal(
+    backend.calls.embed,
+    0,
+    'no embedding for short or id-like text',
+  );
+
+  config.ai.enabled = false;
+  const off = await agent
+    .get('/search')
+    .query({ text: 'block incline acceleration slides' });
+  config.ai.enabled = true;
+  assert.equal(off.status, 200);
+  assert.doesNotMatch(off.text, /Related by meaning/);
+
+  const failing = makeFakeBackend('x');
+  failing.embed = async () => {
+    throw new Error('model unavailable');
+  };
+  setBackend(failing);
+  const down = await agent
+    .get('/search')
+    .query({ text: 'frictionless incline acceleration' });
+  assert.equal(down.status, 200, 'keyword search still renders');
+
+  const { allow } = require('../utils/ai/search');
+  const key = 'rate-limit-test';
+  const results = Array.from({ length: 22 }, () => allow(key, 1_000_000));
+  assert.equal(results.filter(Boolean).length, 20);
+  assert.equal(allow(key, 1_000_000 + 61_000), true, 'window slides');
+});
