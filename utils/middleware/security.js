@@ -18,6 +18,11 @@ function securityHeaders() {
         formAction: ["'self'"],
       },
     },
+    // helmet's default (no-referrer) makes browsers send `Origin: null` on every
+    // same-origin form post, which no Origin-based CSRF check can tell apart from
+    // a sandboxed cross-site form. This is the browser default, so nothing else
+    // changes.
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     hsts: isProduction,
@@ -40,8 +45,15 @@ function sameOriginGuard(req, res, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();
   }
+  // Sec-Fetch-Site is set by the browser itself and cannot be forged by a page,
+  // so when it is present it decides. Origin is only a fallback for clients
+  // that do not send it, because Origin can legitimately be "null" on a
+  // same-origin post (see the referrer policy above).
   const fetchSite = req.get('Sec-Fetch-Site');
-  if (fetchSite && !['same-origin', 'none'].includes(fetchSite)) {
+  if (fetchSite) {
+    if (['same-origin', 'none'].includes(fetchSite)) {
+      return next();
+    }
     return res.status(403).send('Cross-site request blocked.');
   }
   const origin = req.get('Origin');

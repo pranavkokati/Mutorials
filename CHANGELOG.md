@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Fixed
+
+- **Browsers could not sign in or submit any form.** Helmet's default
+  `Referrer-Policy: no-referrer` makes browsers send `Origin: null` on
+  same-origin form posts, and the CSRF guard rejected `null` with a 403. The
+  guard now trusts `Sec-Fetch-Site` (set by the browser, not forgeable by a
+  page) and only falls back to `Origin` for clients that do not send it, and
+  the referrer policy is the browser default,
+  `strict-origin-when-cross-origin`. Regression tests added. The earlier
+  tests used a client that never sends `Origin: null`, which is why they
+  passed.
+
 ### Added
 
 - **Redesigned signed-in app** ("an answer sheet on a desk"): new type
