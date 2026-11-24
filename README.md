@@ -42,6 +42,8 @@ All configuration is read through [`utils/config.js`](utils/config.js). No secre
 
 Mutorials includes optional AI features that run on the server itself with open-weight models from Hugging Face. No question text or user data is sent to a third-party AI service. They provide related-question suggestions, duplicate detection for question authors, and (opt-in) hints and simplified explanations that are checked against the author's own explanation before they are shown. Details, hardware requirements and measured model behaviour are in [docs/AI.md](docs/AI.md).
 
+Question selection is adaptive. Learner and question ratings use an uncertainty-aware Elo update that adapts quickly to new learners and new questions and settles as evidence accumulates; see [docs/RATING.md](docs/RATING.md) for the specification and an offline simulation (`node scripts/elo-sim.js`).
+
 ## Security
 
 See [SECURITY.md](SECURITY.md) for the security model and how to report a vulnerability.

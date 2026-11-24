@@ -136,6 +136,27 @@ function markServed(session, questionId) {
   }
 }
 
+// Observations behind a learner's rating in one subject. Accounts that predate
+// the per-subject counter fall back to their lifetime answer total, which
+// over-counts (it spans subjects) and therefore errs towards a calmer rating.
+function hasAttemptCounter(user, subjectKey) {
+  const stats = (user && user.stats) || {};
+  return Boolean(stats.attempts) && Number.isFinite(stats.attempts[subjectKey]);
+}
+
+function userAttemptCount(user, subjectKey) {
+  const stats = (user && user.stats) || {};
+  if (hasAttemptCounter(user, subjectKey)) {
+    return stats.attempts[subjectKey];
+  }
+  return (stats.correct || 0) + (stats.wrong || 0);
+}
+
+function questionAttemptCount(question) {
+  const stats = (question && question.stats) || {};
+  return (stats.pass || 0) + (stats.fail || 0);
+}
+
 /**
  * Atomically records a graded answer.
  *
@@ -178,10 +199,15 @@ async function recordAnswer(
     return outcome;
   }
 
+  const userAttempts = userAttemptCount(user, subjectKey);
   const { newUserRating, newQuestionRating } = calculateRatings(
     oldUserRating,
     oldQRating,
     correct,
+    {
+      userAttempts,
+      questionAttempts: questionAttemptCount(question),
+    },
   );
   const experience = correct ? question.rating : Math.ceil(question.rating / 2);
   const today = new Date().toISOString().split('T')[0];
@@ -201,6 +227,14 @@ async function recordAnswer(
     'stats.experience': experience,
     [correct ? 'stats.correct' : 'stats.wrong']: 1,
   };
+  // seed the counter from the legacy total the first time it is needed, so an
+  // established account is not mistaken for a newcomer after its first answer
+  const attemptsKey = 'stats.attempts.' + subjectKey;
+  if (hasAttemptCounter(user, subjectKey)) {
+    inc[attemptsKey] = 1;
+  } else {
+    set[attemptsKey] = userAttempts + 1;
+  }
   const push = {
     ['stats.ratingTracker.' + subjectKey]: {
       $each: [newUserRating],

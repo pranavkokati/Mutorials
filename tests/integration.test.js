@@ -446,9 +446,9 @@ test('ratings move in the expected direction on a surprising wrong answer', asyn
   assert.equal(qdoc.stats.fail, 1);
 });
 
-test('an even match leaves the question rating unchanged (quantisation in the K=16 / 25 scheme)', async () => {
-  // Documents a known weakness of the legacy update rule: the question moves by
-  // round(userDelta / 25), which is 0 whenever |userDelta| < 13.
+test('an even match between two unseen ratings moves both, and the question moves in the opposite direction', async () => {
+  // Legacy rule: the question moved by round(userDelta / 25) = 0 here.
+  // v2: both ratings carry maximal uncertainty, so both move.
   const { agent, user } = await newUser();
   await rate(user, 1200);
   const q = await seedQuestion({ rating: 1200 });
@@ -465,8 +465,41 @@ test('an even match leaves the question rating unchanged (quantisation in the K=
       units: physicsUnit(),
     });
   const qdoc = await ctx.mongo.Ques.findById(q._id).lean();
-  assert.equal(qdoc.rating, 1200);
+  const udoc = await ctx.mongo.User.findOne({ username: user.username }).lean();
   assert.equal(qdoc.stats.fail, 1);
+  assert.equal(udoc.rating.physics, 1200 - 32); // K = 64, p = 0.5
+  assert.equal(qdoc.rating, 1200 + 24); // K = 48, p = 0.5
+  assert.equal(udoc.stats.attempts.physics, 1);
+});
+
+test('legacy accounts are seeded from their lifetime total, not restarted as newcomers', async () => {
+  const { agent, user } = await newUser();
+  await rate(user, 1200);
+  // an established account that predates the per-subject counter
+  await ctx.mongo.User.updateOne(
+    { username: user.username },
+    { $set: { 'stats.correct': 120, 'stats.wrong': 80 } },
+  );
+  const q = await seedQuestion({ rating: 1200, stats: { pass: 60, fail: 60 } });
+  await agent
+    .get('/train/Physics/displayQuestion')
+    .query({ units: physicsUnit() });
+  await agent
+    .post('/train/checkAnswer')
+    .type('form')
+    .send({
+      id: String(q._id),
+      type: 'mc',
+      answerChoice: '3',
+      units: physicsUnit(),
+    });
+  const udoc = await ctx.mongo.User.findOne({ username: user.username }).lean();
+  const qdoc = await ctx.mongo.Ques.findById(q._id).lean();
+  // n = 200 for the learner: K = 16 * (1 + 3 / 21) = 18.29, so a miss at p = 0.5 costs 9
+  assert.equal(udoc.rating.physics, 1200 - 9);
+  assert.equal(udoc.stats.attempts.physics, 201);
+  // n = 120 for the question: K = 8 * (1 + 5 / 5) = 16 -> +8
+  assert.equal(qdoc.rating, 1200 + 8);
 });
 
 test('initial rating can be set once and cannot be reset by replay', async () => {
