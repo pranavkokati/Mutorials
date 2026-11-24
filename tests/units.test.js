@@ -16,6 +16,13 @@ const {
   sameAnswerSet,
   freeResponseMatches,
 } = require('../utils/functions/answers');
+const {
+  calculateRatings,
+  calculateRatingsLegacy,
+  expectedScore,
+  stepSize,
+  ENGINE,
+} = require('../utils/functions/siteAlgorithms');
 const { parseQuestionForm } = require('../utils/functions/questionInput');
 const { subjectUnitDictionary } = require('../utils/constants/subjects');
 const { isValidId, toObjectId } = require('../utils/functions/ids');
@@ -158,4 +165,99 @@ test('question form validation', () => {
   // operator objects are coerced, not passed through to the database
   const injected = parseQuestionForm({ ...valid, question: { $ne: 1 } });
   assert.ok(injected.error);
+});
+
+// ------------------------------------------------------------ rating engine
+
+test('expectedScore is 0.5 at equal ratings and 0.9 at a 1000-point advantage', () => {
+  assert.equal(expectedScore(1500, 1500), 0.5);
+  assert.ok(Math.abs(expectedScore(2500, 1500) - 0.9) < 1e-12);
+  assert.ok(Math.abs(expectedScore(1500, 2500) - 0.1) < 1e-12);
+});
+
+test('step size shrinks monotonically with attempts and bottoms out at kInf', () => {
+  for (const cfg of [ENGINE.user, ENGINE.question]) {
+    let last = Infinity;
+    for (const n of [0, 1, 5, 20, 100, 1000, 100000]) {
+      const k = stepSize(cfg, n);
+      assert.ok(k < last, `K(${n}) should be below the previous value`);
+      assert.ok(k > cfg.kInf);
+      last = k;
+    }
+    assert.equal(stepSize(cfg, Infinity), cfg.kInf);
+    assert.equal(stepSize(cfg, undefined), stepSize(cfg, 0));
+    assert.equal(stepSize(cfg, -5), stepSize(cfg, 0));
+  }
+});
+
+test('v2 updates are zero-sum in direction: a miss lowers the learner and raises the question', () => {
+  const miss = calculateRatings(2000, 2000, false, {
+    userAttempts: 3,
+    questionAttempts: 3,
+  });
+  assert.ok(miss.newUserRating < 2000);
+  assert.ok(miss.newQuestionRating > 2000);
+  const hit = calculateRatings(2000, 2000, true, {
+    userAttempts: 3,
+    questionAttempts: 3,
+  });
+  assert.ok(hit.newUserRating > 2000);
+  assert.ok(hit.newQuestionRating < 2000);
+});
+
+test('v2 rewards upsets more than expected results', () => {
+  const upset = calculateRatings(1000, 3000, true, {});
+  const expected = calculateRatings(3000, 1000, true, {});
+  assert.ok(upset.newUserRating - 1000 > expected.newUserRating - 3000);
+});
+
+test('v2 learners with little history move faster than veterans', () => {
+  const newcomer = calculateRatings(1500, 1500, true, { userAttempts: 0 });
+  const veteran = calculateRatings(1500, 1500, true, { userAttempts: 500 });
+  assert.ok(newcomer.newUserRating - 1500 > veteran.newUserRating - 1500);
+});
+
+test('v2 moves a question on an even match where legacy froze it', () => {
+  const legacy = calculateRatingsLegacy(1200, 1200, false);
+  assert.equal(legacy.newQuestionRating, 1200);
+  const v2 = calculateRatings(1200, 1200, false, {
+    userAttempts: 50,
+    questionAttempts: 50,
+  });
+  assert.ok(v2.newQuestionRating > 1200);
+});
+
+test('ratings never fall below 1 and results are integers', () => {
+  const low = calculateRatings(1, 5000, false, {
+    userAttempts: 0,
+    questionAttempts: 0,
+  });
+  assert.equal(low.newUserRating, 1);
+  const q = calculateRatings(5000, 1, true, {
+    userAttempts: 0,
+    questionAttempts: 0,
+  });
+  assert.equal(q.newQuestionRating, 1);
+  const r = calculateRatings(1234, 2345, true, {
+    userAttempts: 7,
+    questionAttempts: 9,
+  });
+  assert.ok(Number.isInteger(r.newUserRating));
+  assert.ok(Number.isInteger(r.newQuestionRating));
+});
+
+test('without attempt counts v2 matches the legacy learner step for an established learner', () => {
+  // K_inf (user) is 16, identical to the legacy constant
+  for (const [u, qr] of [
+    [1500, 1500],
+    [2000, 1200],
+    [900, 2400],
+  ]) {
+    for (const correct of [true, false]) {
+      assert.equal(
+        calculateRatings(u, qr, correct).newUserRating,
+        calculateRatingsLegacy(u, qr, correct).newUserRating,
+      );
+    }
+  }
 });

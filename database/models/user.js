@@ -25,6 +25,14 @@ const userSchema = new mongoose.Schema({
       usabo: String,
       ess: String,
     },
+    // rated answers per subject; drives the uncertainty-aware rating step
+    attempts: {
+      physics: Number,
+      chemistry: Number,
+      biology: Number,
+      usabo: Number,
+      ess: Number,
+    },
     ratingTracker: {
       physics: Array,
       chemistry: Array,
